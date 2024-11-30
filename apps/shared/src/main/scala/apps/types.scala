@@ -26,14 +26,6 @@ object Value:
 
 case class Card(value: Value, suit: Suit):
     require(value >= 2 && value <= 14)
-
-    def allCards(): List[Card] =
-        val deck = 
-            for
-                value <- AllValues
-                suit <- AllSuits
-            yield Card(value, suit)
-        deck.toList
     
     def completeName(): String =
         if value <= 10 then f"$value$suit"
@@ -46,16 +38,25 @@ case class Card(value: Value, suit: Suit):
         other.suit == this.suit
     
     def sameValue(other: Card): Boolean = 
-        other.value == other.value
+        other.value == this.value
+
+object AllCards:
+    def get(): List[Card] =
+        val deck = 
+            for
+                value <- AllValues
+                suit <- AllSuits
+            yield Card(value, suit)
+        deck.toList
     
 case class GameState(
-    playersAmount: Map[UserId, Balance],
+    playerBalance: Map[UserId, Balance],
     poolValue: Int,
     roundBets: Map[UserId, Bet],
     currentPlayer: UserId,
     dealerCards: Set[Card],
     playerCards: Map[UserId, Hand],
-    pahse: Phase,
+    phase: Phase,
     activePlayers: Map[UserId, Boolean]
 )
 
