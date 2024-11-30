@@ -27,7 +27,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
     import apps.Phase.* 
     import apps.Event.*
-    import apps.Action.* 
+    import apps.Play.* 
     import apps.PhaseView.*
     import apps.Card.*
 
@@ -58,7 +58,7 @@ class Logic extends StateMachine[Event, GameState, View]:
         )
 
 
-    override def transition(state: GameState)(userId: UserId, event: Event): Try[Seq[Action[State]]] = 
+    override def transition(state: GameState)(userId: UserId, event: Event): Try[Seq[Action[GameState]]] = 
         val GameState(playerBalance, poolValue, roundBets, currentPlayer, dealerCards, playerCards, phase, canStillPlay, smallBlind, turnBets, players) = state
 
         if (userId == currentPlayer && canStillPlay(userId)) then
@@ -98,6 +98,3 @@ class Logic extends StateMachine[Event, GameState, View]:
             case Phase.Reverse => View(PhaseView.InGame(currentPlayer, playerCards(userId)), (playerBalance, poolValue), dealerCards.take(5))
             case Phase.EndGame => View(PhaseView.Winner(playerBalance.filter((key, value) => value != 0).head._1), (playerBalance, 0), dealerCards.take(0))
             
-        
-            
-        
