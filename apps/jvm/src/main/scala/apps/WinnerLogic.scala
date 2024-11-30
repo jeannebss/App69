@@ -13,8 +13,8 @@ enum HandValue:
     case House(value: Value)
     case StraightFlush(value: Value)
 
+    
 type Winners = Set[UserId]
-
 
 object WinnerLogic:
     def straight(card: Iterable[Card]): Option[Value] = 
@@ -53,7 +53,7 @@ object WinnerLogic:
                 else return HandValue.Pair(multi(2, set).get))
                     else return HandValue.High(set.map(_.value).max)
 
-    
-
     def winner(players: Map[UserId, Hand], dealer: Set[Card]): Winners =
-        ???
+        val handValue: Map[UserId, HandValue] = players.map(tup => (tup._1, WinnerLogic.handValue(tup._2, dealer)))
+        val max = handValue.maxBy(_._2.ordinal)._2
+        handValue.filter(tup => tup._2 == max).keys.toSet
