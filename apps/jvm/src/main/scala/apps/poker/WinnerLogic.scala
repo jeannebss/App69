@@ -1,4 +1,5 @@
-package apps.poker
+package apps
+package poker
 
 import cs214.webapp.UserId
 
