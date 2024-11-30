@@ -49,26 +49,36 @@ case class Card(value: Value, suit: Suit):
         other.value == other.value
     
 case class GameState(
-    playersBets: Map[UserId, Balance],
+    playersAmount: Map[UserId, Balance],
     poolValue: Int,
     roundBets: Map[UserId, Bet],
     currentPlayer: UserId,
     dealerCards: Set[Card],
     playerCards: Map[UserId, Hand],
-    pahse: Phase
+    pahse: Phase,
+    activePlayers: Map[UserId, Boolean]
 )
 
 enum Phase:
-    case Setup, Playing, EndRound, EndGame
+    case Setup, PreFlop, Flop, Turn, Reverse, EndGame 
 
 case class View(
-    phaseView: PhaseView
+    phaseView: PhaseView,
+    scoresView: PhaseView,
+    cardView: CardView
 )
 
 enum PhaseView:
-    case Start
-    case Playing
-    case Done
+    case Setup(users: List[UserId])
+    case InGame(currentPlayer: UserId, playersCards: Map[UserId, Hand])
+    case Winner(winnerId: UserId)
+
+
+
+type CardView = List[Card]
+
+type scoresView = (Map[UserId, Int], Int)
+    
 
 enum Event:
     case PlayerAction(action: Action)
@@ -79,3 +89,4 @@ enum Action:
     case Call 
     case Fold
     case Raise(value: Bet)
+
