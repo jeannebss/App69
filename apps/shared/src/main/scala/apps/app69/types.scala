@@ -62,7 +62,7 @@ case class GameState(
     turnBets: Map[UserId, Bet],
     players: Seq[UserId],
     highestBet: UserId,
-    betAmount: Int
+    betAmount: Bet
 )
 
 enum Phase:
@@ -83,10 +83,10 @@ type CardView = List[Card]
 type ScoresView = (Map[UserId, Int], Int)
     
 enum Event:
-    case PlayerAction(action: Play)
+    case PlayerAction(action: Choice)
     case EndGameChoice(choice: Boolean)
 
-enum Play:
+enum Choice:
     case Check
     case Call 
     case Fold

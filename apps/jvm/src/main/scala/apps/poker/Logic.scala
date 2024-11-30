@@ -27,7 +27,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
     import apps.Phase.* 
     import apps.Event.*
-    import apps.Play.* 
+    import apps.Choice.* 
     import apps.PhaseView.*
     import apps.Card.*
 
