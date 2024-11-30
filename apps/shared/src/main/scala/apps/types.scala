@@ -83,10 +83,10 @@ type CardView = List[Card]
 type ScoresView = (Map[UserId, Int], Int)
     
 enum Event:
-    case PlayerAction(action: Action)
+    case PlayerAction(action: Play)
     case EndGameChoice(choice: Boolean)
 
-enum Action:
+enum Play:
     case Check
     case Call 
     case Fold
