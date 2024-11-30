@@ -42,6 +42,12 @@ case class Card(value: Value, suit: Suit):
         else if value == 13 then f"K$suit"
         else f"A$suit"
 
+    def sameSuit(other: Card): Boolean =
+        other.suit == this.suit
+    
+    def sameValue(other: Card): Boolean = 
+        other.value == other.value
+    
 case class GameState(
     playersBets: Map[UserId, Balance],
     poolValue: Int,
