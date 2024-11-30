@@ -56,7 +56,11 @@ case class GameState(
     currentPlayer: UserId,
     dealerCards: List[Card],
     playerCards: Map[UserId, Hand],
-    phase: Phase
+    phase: Phase,
+    canStillPlay: Map[UserId, Boolean],
+    smallBlind: UserId,
+    turnBets: Map[UserId, Bet],
+    players: Seq[UserId]
 )
 
 enum Phase:
