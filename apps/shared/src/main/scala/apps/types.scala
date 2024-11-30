@@ -2,7 +2,7 @@ package apps
 
 import cs214.webapp.UserId
 import Value.*
-import apps.Suit.*
+import apps.*
 
 type Suit = String
 
@@ -28,11 +28,11 @@ case class Card(value: Value, suit: Suit):
     require(value >= 2 && value <= 14)
     
     def completeName(): String =
-        if value <= 10 then f"$value$suit"
-        else if value == 11 then f"J$suit"
-        else if value == 12 then f"Q$suit"
-        else if value == 13 then f"K$suit"
-        else f"A$suit"
+        if value <= 10 then s"$value$suit"
+        else if value == 11 then s"J$suit"
+        else if value == 12 then s"Q$suit"
+        else if value == 13 then s"K$suit"
+        else s"A$suit"
 
     def sameSuit(other: Card): Boolean =
         other.suit == this.suit
@@ -45,42 +45,37 @@ object AllCards:
         val deck = 
             for
                 value <- AllValues
-                suit <- AllSuits
+                suit <- Suit.AllSuits
             yield Card(value, suit)
         deck.toList
-    
+
 case class GameState(
     playerBalance: Map[UserId, Balance],
     poolValue: Int,
     roundBets: Map[UserId, Bet],
     currentPlayer: UserId,
-    dealerCards: Set[Card],
+    dealerCards: List[Card],
     playerCards: Map[UserId, Hand],
-    phase: Phase,
-    activePlayers: Map[UserId, Boolean]
+    phase: Phase
 )
 
 enum Phase:
-    case Setup, PreFlop, Flop, Turn, Reverse, EndGame 
+    case PreFlop, Flop, Turn, Reverse, EndGame 
 
 case class View(
     phaseView: PhaseView,
-    scoresView: PhaseView,
+    scoresView: ScoresView,
     cardView: CardView
 )
 
 enum PhaseView:
-    case Setup(users: List[UserId])
-    case InGame(currentPlayer: UserId, playersCards: Map[UserId, Hand])
+    case InGame(currentPlayer: UserId, playersCards: Hand)
     case Winner(winnerId: UserId)
-
-
 
 type CardView = List[Card]
 
-type scoresView = (Map[UserId, Int], Int)
+type ScoresView = (Map[UserId, Int], Int)
     
-
 enum Event:
     case PlayerAction(action: Action)
     case EndGameChoice(choice: Boolean)
@@ -90,4 +85,3 @@ enum Action:
     case Call 
     case Fold
     case Raise(value: Bet)
-
