@@ -60,7 +60,9 @@ case class GameState(
     canStillPlay: Map[UserId, Boolean],
     smallBlind: UserId,
     turnBets: Map[UserId, Bet],
-    players: Seq[UserId]
+    players: Seq[UserId],
+    highestBet: UserId,
+    betAmount: Int
 )
 
 enum Phase:

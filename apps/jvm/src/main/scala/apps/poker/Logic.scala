@@ -54,42 +54,84 @@ class Logic extends StateMachine[Event, GameState, View]:
             clients.map(_ -> false).toMap,
             clients.head,
             clients.map(_ -> 0).toMap,
-            clients
+            clients,
+            clients.head,
+            0
         )
 
 
     override def transition(state: GameState)(userId: UserId, event: Event): Try[Seq[Action[State]]] = 
-        val GameState(playerBalance, poolValue, roundBets, currentPlayer, dealerCards, playerCards, phase, canStillPlay, smallBlind, turnBets, players) = state
+        val GameState(playerBalance, poolValue, roundBets, currentPlayer, dealerCards, playerCards, phase, canStillPlay, smallBlind, turnBets, players, highestBet, betAmount) = state
 
         if (userId == currentPlayer && canStillPlay(userId)) then
             phase match
                 case Phase.PreFlop => event match
                     case PlayerAction(action) => action match
-                        case Check => if(turnBets.forall((user, value) => value == 0)) then 
-                            val nextP = players((players.indexOf(currentPlayer) + 1) % players.size)
-                            if(players.indexOf(nextP) == players.indexOf(smallBlind) && turnBets.forall((key, value) => value == turnBets(currentPlayer))) then
-                                val nextState = Phase.Flop
-                            else 
-                                val nextState = phase
-                            state.copy(currentPlayer = nextP, phase = nextPhase)//tester si c'est la dernière phase
+                        case Check => 
+                            if(turnBets.forall((user, value) => value == 0)) then 
+                                val nextP = players((players.indexOf(currentPlayer) + 1) % players.size)
+                                var nextState = phase
+                                var newTurnBet = turnBets
+                                if(players.indexOf(nextP) == players.indexOf(highestBet) && canStillPlay.filter((key, bool) => bool)
+                                                                                                .forall((key, value) => turnBets(key) == turnBets(highestBet))) then
+
+                                    nextState = Phase.Flop
+                                    newTurnBet = players.map(_ -> 0).toMap
+                                else 
+                                    nextState = phase
+                                state.copy(currentPlayer = nextP, phase = nextState)
+                                ??? // penser a le mettre en seq de action
                             else throw IllegalMoveException("You have to call or fold!")
-                        case Call =>
-                        case Fold =>
-                        case Raise(value) =>
+
+
+                        case Call => 
+                            val nextP = players((players.indexOf(currentPlayer) + 1) % players.size)
+                            val newPlayerBalance = playerBalance + (userId -> (playerBalance(userId) - betAmount))
+                            val newPoolValue = poolValue + betAmount
+                            val newRoundBets = roundBets + (userId -> (roundBets(userId) + betAmount))
+                            val newTurnBets = roundBets + (userId -> (turnBets(userId) + betAmount))
+                            var nextState = phase
+                            var newTurnBet = turnBets
+                            if(players.indexOf(nextP) == players.indexOf(highestBet) && canStillPlay.filter((key, bool) => bool)
+                                                                                                .forall((key, value) => turnBets(key) == turnBets(highestBet))) then
+
+                                nextState = Phase.Flop
+                                newTurnBet = players.map(_ -> 0).toMap
+                            else 
+                                val newTurnBets = roundBets + (userId -> (turnBets(userId) + betAmount))
+                            
+                            state.copy(currentPlayer = nextP, phase = nextState, playerBalance = newPlayerBalance, poolValue = newPoolValue, roundBets = newRoundBets, turnBets = newTurnBet)
+                            ???
+
+
+
+                        case Fold => val nextP = players((players.indexOf(currentPlayer) + 1) % players.size)
+                            val newCanPlay = canStillPlay + (userId -> false)
+                            val newPlayers = players.filter(user => user != userId)
+                            var nextState = phase
+                            var newTurnBet = turnBets
+                            if(players.indexOf(nextP) == players.indexOf(highestBet) && newCanPlay.filter((key, bool) => bool).forall((key, value) => turnBets(key) == turnBets(highestBet))) then
+                                nextState = Phase.Flop
+                                newTurnBet = players.map(_ -> 0).toMap
+                            else 
+                                nextState = phase
+                            state.copy(currentPlayer = nextP, canStillPlay = newCanPlay, phase = nextState, turnBets = newTurnBet, players = newPlayers)
+                            ???
+                        case Raise(value) => ???
                     
-                    case EndGameChoice(choice) =>
+                    case EndGameChoice(choice) => ???
                 
-                case Phase.Flop => 
-                case Phase.Turn => 
-                case Phase.Reverse =>
-                case Phase.EndGame =>
+                case Phase.Flop => ???
+                case Phase.Turn => ???
+                case Phase.Reverse => ???
+                case Phase.EndGame => ???
         else{
             throw IllegalMoveException("not your turn")
         }
 
 
     override def project(state: GameState)(userId: UserId): View = 
-        val GameState(playerBalance, poolValue, roundBets, currentPlayer, dealerCards, playerCards, phase, canStillPlay, smallBlind, turnBets, players) = state
+        val GameState(playerBalance, poolValue, roundBets, currentPlayer, dealerCards, playerCards, phase, canStillPlay, smallBlind, turnBets, players, highestBet, betAmount) = state
 
         phase match
             case Phase.PreFlop => View(PhaseView.InGame(currentPlayer, playerCards(userId)), (playerBalance, poolValue), dealerCards.take(0))
