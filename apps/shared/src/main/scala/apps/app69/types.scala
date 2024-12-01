@@ -57,6 +57,7 @@ case class GameState(
     phase: Phase,
     activePlayer: Map[UserId, Boolean],
     smallBlind: UserId,
+    highestBetter: UserId,
     turnBets: Map[UserId, Bet]
 )
 
