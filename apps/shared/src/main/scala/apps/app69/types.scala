@@ -12,8 +12,6 @@ type Bet = Int
 
 type Balance = Int
 
-type Hand = (Card, Card)
-
 object Suit:
     val Heart = "♥️"
     val Club = "♣️"
@@ -41,12 +39,13 @@ case class Card(value: Value, suit: Suit):
         other.value == this.value
 
 object AllCards:
-    def get(): Set[Card] =
+    val AllCards: Set[Card] =
         for
             value <- AllValues
             suit <- Suit.AllSuits
         yield Card(value, suit)
-    
+
+case class Hand(first: Card, second: Card)
 
 case class GameState(
     playerBalance: Map[UserId, Balance],
@@ -57,7 +56,7 @@ case class GameState(
     phase: Phase,
     activePlayer: Map[UserId, Boolean],
     smallBlind: UserId,
-    turnBets: Map[UserId, Bet],
+    turnBets: Map[UserId, Bet]
 )
 
 enum Phase:
@@ -70,15 +69,22 @@ case class View(
 )
 
 enum PhaseView:
-    case InGame(currentPlayer: UserId, playersCards: Hand)
-    case Winner(winnerId: UserId)
+    case ChoiceSelection(currentPlayer: UserId)
+    case ChoiceMade(currentPlayer: UserId, choice: Choice)
+    case Winner(winnerId: UserId, balance: Balance)
 
-type CardView = Set[Card]
+case class CardView(
+    playerCards: Hand,
+    dealerCards: Set[Card]
+)
 
-type ScoresView = (Map[UserId, Int], Int)
+case class ScoresView(
+    playerScores: Map[UserId, Balance],
+    poolBalance: Balance
+)
     
 enum Event:
-    case PlayerAction(action: Choice)
+    case PlayerAction(choice: Choice)
     case EndGameChoice(choice: Boolean)
     case Ready
 
