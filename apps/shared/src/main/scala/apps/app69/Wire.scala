@@ -9,50 +9,156 @@ import scala.collection.mutable.LinkedHashMap
 import scala.collection.mutable
 import javax.swing.plaf.metal.MetalIconFactory.FolderIcon16
 
-trait Encoder[T]:
-    def encode(t: T): Value
-
-trait Decoder[T]:
-    def decode(json: Value): Try[T]
-
-trait WireFormat[T] extends Encoder[T] with Decoder[T]
-
-def encodeWire[T](t: T)(using wireFormat: WireFormat[T]): Value =
-    wireFormat.encode(t)
-
-def decodeWire[T](json: Value)(using wireFormat: WireFormat[T]): Try[T] =
-    wireFormat.decode(json)
-
 object Wire extends AppWire[Event, View]:
     import Event.*
-
-    given WireFormat[Event] with
-        def encode(event: Event): Value =
-            event match
-                case PlayerAction(action) =>
-                    Obj("tag" -> "PlayerAction", "value" -> encodeWire(action))
-                case EndGameChoice(choice) => 
-                    Obj("tag" -> "EndGameChoice", "value" -> Bool(choice))
-            
-        def decode(json: Value): Try[Event] = Try:
-            json("tag").str match
-                case "PlayerAction" => PlayerAction(decodeWire(json("value")).get)
-                case "EndGameChoice" => EndGameChoice(json("value").bool)
-
     import Choice.* 
-    given WireFormat[Choice] with
+    import Phase.* 
+    import PhaseView.*
+
+    object ChoiceWire extends WireFormat[Choice]:
         def encode(choice: Choice): Value =
             choice match
                 case Check => Obj("tag" -> "Check")
                 case Call => Obj("tag" -> "Call")
                 case Fold => Obj("tag" -> "Fold")
-                case Raise(value: Bet) => Obj("tag" -> "Raise", "amount" -> Num(value))
+                case Raise(value: Bet) => Obj("tag" -> "Raise", "amount" -> IntWire.encode(value))
         def decode(json: Value): Try[Choice] = Try:
             json("tag").str match
                 case "Check" => Check
                 case "Call" => Call
                 case "Fold" => Fold
-                case "Raise" => Raise(json("amount").num.toInt)
+                case "Raise" => Raise(IntWire.decode(json("amount")).get)
+                case _ => throw new DecodingException("Wrong choice!")
 
-    val eventFormat: WireFormat[Event] = ???
-    val phaseFormat: WireFormat[Phase] = ???
+    override object eventFormat extends WireFormat[Event]:
+        override def encode(event: Event): Value =
+            event match
+                case PlayerAction(choice) =>
+                    Obj("tag" -> "PlayerAction", "value" -> ChoiceWire.encode(choice))
+                case EndGameChoice(choice) => 
+                    Obj("tag" -> "EndGameChoice", "value" -> Bool(choice))
+                case Ready => 
+                    Obj("tag" -> "Ready")
+
+        override def decode(json: Value): Try[Event] = Try:
+            json("tag").str match
+                case "PlayerAction" => PlayerAction(ChoiceWire.decode(json("value")).get)
+                case "EndGameChoice" => EndGameChoice(json("value").bool)
+                case "Ready" => Ready
+                case _ => throw new DecodingException("Not a valid event!")
+
+    object PhaseWire extends WireFormat[Phase]:
+        def encode(phase: Phase): Value =
+            phase match
+                case InGame(turn) => 
+                    Obj(
+                        "phase" -> "InGame",
+                        "turn" -> IntWire.encode(turn)
+                    )
+                case Reveal  => Obj("phase" -> "Reveal")
+                case EndGame => Obj("phase" -> "EndGame")
+
+        def decode(json: Value): Try[Phase] = Try:
+            json("phase").str match
+                case "InGame" => InGame(IntWire.decode(json("turn")).get)
+                case "Reveal" => Reveal
+                case "EndGame" => EndGame
+                case _ => throw new DecodingException("Not a valid phase!")
+
+    object CardWire extends WireFormat[Card]:
+        def encode(card: Card): Value =
+            Obj(
+                "value" -> IntWire.encode(card.value),
+                "suit" -> StringWire.encode(card.suit)
+            )
+        
+        def decode(json: Value): Try[Card] = Try:
+            val obj = json.obj
+            Card(IntWire.decode(obj("value")).get, StringWire.decode(obj("suit")).get)
+
+    object HandWire extends WireFormat[Hand]:
+        def encode(hand: Hand): Value =
+            Obj(
+                "first" -> CardWire.encode(hand.first),
+                "second" -> CardWire.encode(hand.second)
+            )
+            
+        def decode(json: Value): Try[Hand] = Try:
+            Hand(CardWire.decode(json("first")).get, CardWire.decode(json("second")).get)
+
+    object PhaseViewWire extends WireFormat[PhaseView]:
+        def encode(phaseView: PhaseView): Value =
+            phaseView match
+                case ChoiceSelection(currentPlayer: UserId) =>
+                    Obj(
+                        "tag" -> "ChoiceSelection",
+                        "CurrentPlayer" -> StringWire.encode(currentPlayer)
+                    )
+                case ChoiceMade(currentPlayer: UserId, choice: Choice) => 
+                    Obj(
+                        "tag" -> "ChoiceMade",
+                        "CurrentPlayer" -> StringWire.encode(currentPlayer),
+                        "Choice" -> ChoiceWire.encode(choice)
+                    )
+                case Winner(winner: UserId, balance: Balance) =>
+                    Obj(
+                        "tag" -> "Winner",
+                        "Winner" -> StringWire.encode(winner),
+                        "Balance" -> IntWire.encode(balance)
+                    )
+
+        def decode(json: Value): Try[PhaseView] = Try:
+            json("tag").str match
+                case "ChoiceSelection" =>
+                    val currentPlayer = StringWire.decode(json("CurrentPlayer")).get
+                    ChoiceSelection(currentPlayer)
+                case "ChoiceMade" =>
+                    val currentPlayer = StringWire.decode(json("CurrentPlayer")).get
+                    val choice = ChoiceWire.decode(json("Choice")).get
+                    ChoiceMade(currentPlayer, choice)
+                case "Winner" =>
+                    val winner = StringWire.decode(json("Winner")).get
+                    val balance = IntWire.decode(json("Balance")).get
+                    Winner(winner, balance)
+                case _ =>
+                    throw new DecodingException("Not a valid phase view")
+
+    object ScoresViewWire extends WireFormat[ScoresView]:
+        def encode(scoresView: ScoresView): Value =
+            Obj(
+                "Scores" -> MapWire(StringWire, IntWire).encode(scoresView.playerScores),
+                "Pool" -> IntWire.encode(scoresView.poolBalance)
+            )
+        
+        def decode(json: Value): Try[ScoresView] = Try:
+            val scores = MapWire(StringWire, IntWire).decode(json("Scores")).get
+            val pool = IntWire.decode(json("Pool")).get
+            ScoresView(scores, pool)
+
+    object CardViewWire extends WireFormat[CardView]: 
+        def encode(cardView: CardView): Value =
+            Obj(
+                "PlayerCards" -> HandWire.encode(cardView.playerCards),
+                "DealerCards" -> SetWire(CardWire).encode(cardView.dealerCards)
+            )
+
+        def decode(json: Value): Try[CardView] = Try:
+            val playerCards = HandWire.decode(json("PlayerCards")).get
+            val dealerCards = SetWire(CardWire).decode(json("DealerCards")).get
+            CardView(playerCards, dealerCards)
+
+    override object viewFormat extends WireFormat[View]:
+        
+        override def encode(view: View): Value =
+            Obj(
+                "Phase" -> PhaseViewWire.encode(view.phaseView),
+                "Scores" -> ScoresViewWire.encode(view.scoresView),
+                "Cards" -> CardViewWire.encode(view.cardView)
+            )
+        
+        override def decode(json: Value): Try[View] = Try:
+            val phaseView = PhaseViewWire.decode(json("Phase")).get
+            val scoresView = ScoresViewWire.decode(json("Scores")).get
+            val cardsView = CardViewWire.decode(json("Cards")).get
+            View(phaseView, scoresView, cardsView)
+            

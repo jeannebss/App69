@@ -22,7 +22,7 @@ class Logic extends StateMachine[Event, GameState, View]:
         year = 2024
         )
 
-    override val wire = ???
+    override val wire = Wire
 
     private val END_ROUND_PAUSE_MS = 5000
 
