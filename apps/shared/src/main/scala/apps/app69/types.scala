@@ -40,13 +40,10 @@ case class Card(value: Value, suit: Suit):
 
 object AllCards:
     val AllCards: Set[Card] =
-    val AllCards: Set[Card] =
         for
             value <- AllValues
             suit <- Suit.AllSuits
         yield Card(value, suit)
-
-case class Hand(first: Card, second: Card)
 
 case class Hand(first: Card, second: Card)
 
@@ -60,7 +57,6 @@ case class GameState(
     activePlayer: Map[UserId, Boolean],
     smallBlind: UserId,
     turnBets: Map[UserId, Bet]
-    turnBets: Map[UserId, Bet]
 )
 
 enum Phase:
@@ -73,9 +69,6 @@ case class View(
 )
 
 enum PhaseView:
-    case ChoiceSelection(currentPlayer: UserId)
-    case ChoiceMade(currentPlayer: UserId, choice: Choice)
-    case Winner(winnerId: UserId, balance: Balance)
     case ChoiceSelection(currentPlayer: UserId)
     case ChoiceMade(currentPlayer: UserId, choice: Choice)
     case Winner(winnerId: UserId, balance: Balance)
