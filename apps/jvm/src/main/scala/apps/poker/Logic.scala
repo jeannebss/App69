@@ -16,9 +16,8 @@ class Logic extends StateMachine[Event, GameState, View]:
     val appInfo: AppInfo = AppInfo(
         id = "app69",
         name = "6poker9",
-        description = "6poker9 is a fun and interactive poker game where players " +
-            "strategically take turns, make decisions, and outplay opponents. " +
-            "Designed for friendly gameplay, it offers an engaging experience for all skill levels.",
+        description = "6poker9 is a strategic poker game designed for players of all skill " +
+            "levels, emphasizing thoughtful decision-making and competitive, engaging gameplay.",
         year = 2024
         )
 
@@ -223,10 +222,15 @@ class Logic extends StateMachine[Event, GameState, View]:
         phase match
             case InGame(turn) =>
                 val scoresView = ScoresView(playerBalance, poolValue)
-                val cardView = CardView(playerCards(userId), dealerCards.take(if turn == 0 then 0
-                                                                            else if turn == 1 then 3
-                                                                            else if turn == 2 then 4
-                                                                            else 5))// mauvaise indentation
+                val cardView = CardView(
+                    playerCards(userId), 
+                    dealerCards.take(
+                        if turn == 0 then 0
+                        else if turn == 1 then 3
+                        else if turn == 2 then 4
+                        else 5
+                    )
+                )
                 val phaseView = ChoiceSelection(currentPlayer)
                 View(phaseView, scoresView, cardView)
             case Reveal => 
