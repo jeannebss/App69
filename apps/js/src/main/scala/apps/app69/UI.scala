@@ -113,8 +113,8 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
     
     def ChoiceMadeUIrender(userId: UserId, view: View): Frag =
         val View(phaseView,scoresView,cardView) = view
-        val playerCards = cardView.playerCards.first.toString + cardView.playerCards.second.toString
-        val handOfDealer = cardView.dealerCards.map(_.toString).mkString
+        val playerCards = cardSymbols(cardView.playerCards.first) + cardSymbols(cardView.playerCards.second)
+        val handOfDealer = cardView.dealerCards.map(cardSymbols).mkString
         val poolBalance = scoresView.poolBalance
         val playerScores = scoresView.playerScores
         val players = scoresView.playerScores.keys.toList.filter(_ != userId)
