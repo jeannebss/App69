@@ -123,7 +123,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                             
                             Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
 
-                        val viewingPhase = PlayerChoice(choice)
+                        val viewingPhase = PlayerChoice(turn, choice)
                         val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
                         val nextGamingState = state.copy(poolValue = nextPoolValue, currentPlayer = updateCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
                         Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextGamingState))
@@ -174,7 +174,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                             
                             Seq(Action.Render(showCardPhase), Action.Pause(5000), Action.Render(nextState))
                         
-                        val viewingPhase = PlayerChoice(choice)
+                        val viewingPhase = PlayerChoice(turn, choice)
                         val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet) 
                         
                         val nextState = state.copy(playerBalance = nextPlayerBalance, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
@@ -223,7 +223,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                             
                             Seq(Action.Render(showingPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
 
-                        val viewingPhase = PlayerChoice(choice)
+                        val viewingPhase = PlayerChoice(turn, choice)
                         val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet, activePlayer = nextActivePlayer) 
 
                         val nextState = state.copy(activePlayer = nextActivePlayer, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
@@ -239,7 +239,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                         val nextCurrentPlayer = selectNextPlayer(activePlayer, (players.indexOf(currentPlayer)+1)%number)
 
-                        val viewingPhase = PlayerChoice(choice)
+                        val viewingPhase = PlayerChoice(turn, choice)
                         val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
 
                         val nextState = state.copy(currentPlayer = nextCurrentPlayer, playerBalance = nextPlayerBalance, turnBets = nextTurnBet)
