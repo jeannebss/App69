@@ -104,9 +104,150 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
             )
         )
     override def css: String = super.css + """
-    html {
+    html{
+	text-align: center;
+	font-family: 'Inknut Antiqua', serif;
+	color: black;
+	background: #f6f6f6;
+    }
+
+    .player > div {
+        line-height: 1.2; 
+    }
+
+    body{
+        background-color: #e1e1e1;
+        margin:1em;
+        height:100%;
+    }
+
+    .space-before-table{
+        height:10%;
+    }
+
+    .game-table{
+        position: relative;
+        
+    }
+
+    .all-table {
+        
+        position: absolute;  
+        top: 50%;            
+        left: 50%;           
+        transform: translate(-50%, -50%); 
+
+
+        display: grid;
+        place-items: center;
+
+        width: 50%;
+        height: 60%;
+        color: white;
+        background-color: #bababa;
+        border-radius: 50%;
+
+    }
+
+    .center-table{
+        
+    display: grid;
+        place-items: center;
+        line-height:2;
+
+        width: 92%;
+        height: 88%;
+        background-color: #4c654d;
+        border-radius: 50%;
+        
+    }
+
+    .deck{
+        display:flex;
+        flex-direction:column;
+        font-size:4.5em;
+        line-height:120%;
+    }
+
+    .player{
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .cards{
+        font-size:3em;
+        margin-bottom: 5%;
+    }
+
+    .pot {
+        position: absolute;
+        top: 50%;
+        left: 10%;
+        transform: translateY(-50%); 
+        font-size: 2em;
+        padding: 0.5em;
+    }
+
+    #player1{
+        top:10%;
+        left:15%;
+        
+    }
+    #player2{
+        top:5%;
+        left:75%;
+    }
+
+    #player3{
+        top:85%;
+        left:45%;
+    }
+    #player4{
+        top:45%;
+        left:10%	
+    }
+    #player5{
+        top:50%;
+        left:85%;
+        
+    }
+
+    .controls{
+        position: absolute;
+        bottom: 1%; 
+        left: 10%;   
+        display: flex;
+        flex-direction: row;
+        align-items: flex-end;  
+        width: 60%;
+        gap: 2%;
+    }
+
+
+    button {
+        padding: 1px 20px;
+        background-color: white;
+        border: none;
+        border-radius: 15px;
+        cursor: pointer;
         font-family: 'Inknut Antiqua', serif;
-        background: #f6f6f6;
+    }
+
+    .raise{
+        background-color: #4ba652;
+    }
+
+    .check{
+        background-color: #8e8e8e;
+    }
+
+    .call{
+        background-color: #954d3f;
+    }
+
+    .fold{
+        background-color:#f4625c;
     }
     """
     
