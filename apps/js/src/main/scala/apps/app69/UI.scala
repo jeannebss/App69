@@ -24,8 +24,15 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
   extends WebClientAppInstance[Event, View](userId, sendMessage, target):
     override val wire: AppWire[Event, View] = Wire
 
+    override def render(userId: UserId, view: View): Frag =
+        val View(phaseView,scoresView,cardView) = view
+        phaseView match
+            case PhaseView.ChoiceSelection(currentPlayer) => ChoiceSelectionUIrender(userId, view)
+            case PhaseView.ChoiceMade(currentPlayer, choice) => ChoiceMadeUIrender(userId, view)
+            case PhaseView.Winner(winnerId, balance) => WinnerUIrender(winnerId,balance, view)
 
-    override def render(userId: UserId, view: View): Frag = 
+
+    def ChoiceSelectionUIrender(userId: UserId, view: View): Frag = 
         val View(phaseView,scoresView,cardView) = view
         val playerCards = cardView.playerCards.first.toString + cardView.playerCards.second.toString
         val handOfDealer = cardView.dealerCards.map(_.toString).mkString
@@ -82,7 +89,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                         )
                         ),
                     div(cls := "controls")(
-                        button(cls := "raise", onclick:={ () => 
+                        button(id := "raise", onclick:={ () => 
                             val inputElement = dom.document.getElementById("bet").asInstanceOf[dom.html.Input]
                             val betValue = inputElement.value
                             sendEvent(Event.PlayerAction(Choice.Raise(betValue.toInt)))})
@@ -96,19 +103,92 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                             ),
                             " CHF"
                             ),
-                        button(cls := "check", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Check))})("Check"),
-                        button(cls := "call", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Call))})("Call"),
-                        button(cls := "fold",onclick:={ () => sendEvent(Event.PlayerAction(Choice.Fold))})("Fold")
+                        button(id := "check", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Check))})("Check"),
+                        button(id := "call", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Call))})("Call"),
+                        button(id := "fold",onclick:={ () => sendEvent(Event.PlayerAction(Choice.Fold))})("Fold")
                     )
                 )
             )
         )
+    
+    def ChoiceMadeUIrender(userId: UserId, view: View): Frag =
+        val View(phaseView,scoresView,cardView) = view
+        val playerCards = cardView.playerCards.first.toString + cardView.playerCards.second.toString
+        val handOfDealer = cardView.dealerCards.map(_.toString).mkString
+        val poolBalance = scoresView.poolBalance
+        val playerScores = scoresView.playerScores
+        val players = scoresView.playerScores.keys.toList.filter(_ != userId)
+        
+        frag(
+            html(
+                head(
+                    link(
+                        href := "https://fonts.googleapis.com/css2?family=Inknut+Antiqua&display=swap",
+                        rel := "stylesheet"
+                    )
+                ),
+                body(
+                    div(cls := "game-container")(
+                        div(cls := "game-table")(
+                        div(cls := "space-before-table")(),
+                        div(cls := "all-table")(
+                            div(cls := "center-table")(
+                            div(cls := "deck")(
+                                span(cls := "turned-cards")("🂠" * (5 - cardView.dealerCards.size)),
+                                span(cls := "cards-on-table")(handOfDealer)
+                            ),
+                            div(cls := "amount-in-pool")("Amount in the pool:", poolBalance)),
+                            div(cls := "pot")(span(cls := "money")("💰"))
+                            )
+                        ),
+                        div(cls := "player", id := "player1")(
+                            div(cls := "player-name")(players(0)),
+                            div(cls := "cards")("🂠🂠"),
+                            div(cls := "balance")("Balance :", playerScores(players(0)))
+                        ),
+                        div(cls := "player", id := "player2")(
+                            div(cls := "player-name")(players(1)),
+                            div(cls := "cards")("🂠🂠"),
+                            div(cls := "balance")("Balance :", playerScores(players(1)))
+                        ),
+                        div(cls := "player", id := "player3")(
+                            div(cls := "player-name")(userId),
+                            div(cls := "cards")(playerCards),
+                            div(cls := "balance")("Balance :", playerScores(userId))
+                        ),
+                        div(cls := "player", id := "player4")(
+                            div(cls := "player-name")(players(3)),
+                            div(cls := "cards")("🂠🂠"),
+                            div(cls := "balance")("Balance :", playerScores(players(3)))
+                        ),
+                        div(cls := "player", id := "player5")(
+                            div(cls := "player-name")(players(4)),
+                            div(cls := "cards")("🂠🂠"),
+                            div(cls := "balance")("Balance :", playerScores(players(4)))
+                        )
+                    )
+                )
+            )
+        )
+    
+    def WinnerUIrender(winnerId: UserId, balance: Int, view: View): Frag =
+        div(cls := "winner-notification")(
+        h2("Game Over"),
+        p(
+        "The winner is ",
+        b(winnerId),
+        " with a balance of ",
+        span(cls := "balance")(s"$balance CHF"),
+        "."
+        )
+  )
+
     override def css: String = super.css + """
     html{
-	text-align: center;
-	font-family: 'Inknut Antiqua', serif;
-	color: black;
-	background: #f6f6f6;
+        text-align: center;
+        font-family: 'Inknut Antiqua', serif;
+        color: black;
+        background: #f6f6f6;
     }
 
     .player > div {
@@ -127,39 +207,30 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
 
     .game-table{
         position: relative;
-        
     }
 
     .all-table {
-        
         position: absolute;  
         top: 50%;            
         left: 50%;           
         transform: translate(-50%, -50%); 
-
-
         display: grid;
         place-items: center;
-
         width: 50%;
         height: 60%;
         color: white;
         background-color: #bababa;
         border-radius: 50%;
-
     }
 
     .center-table{
-        
-    display: grid;
+        display: grid;
         place-items: center;
         line-height:2;
-
         width: 92%;
         height: 88%;
         background-color: #4c654d;
         border-radius: 50%;
-        
     }
 
     .deck{
@@ -192,13 +263,11 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
     #player1{
         top:10%;
         left:15%;
-        
     }
     #player2{
         top:5%;
         left:75%;
     }
-
     #player3{
         top:85%;
         left:45%;
@@ -210,7 +279,6 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
     #player5{
         top:50%;
         left:85%;
-        
     }
 
     .controls{
@@ -224,8 +292,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
         gap: 2%;
     }
 
-
-    button {
+    button{
         padding: 1px 20px;
         background-color: white;
         border: none;
@@ -234,19 +301,16 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
         font-family: 'Inknut Antiqua', serif;
     }
 
-    .raise{
+    #raise{
         background-color: #4ba652;
     }
-
-    .check{
+    #check{
         background-color: #8e8e8e;
     }
-
-    .call{
+    #call{
         background-color: #954d3f;
     }
-
-    .fold{
+    #fold{
         background-color:#f4625c;
     }
     """
