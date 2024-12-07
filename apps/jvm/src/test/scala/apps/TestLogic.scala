@@ -25,6 +25,13 @@ class TestLogic extends munit.FunSuite{
         assertEquals(highestBetter, "Alexis")
         assertEquals(turnBets,  Map(("Alexis" -> 0), ("Jeanne" -> 0), ("Antoine" -> 0), ("Jakub" -> 0), ("Guillaume" -> 0)))
 
+    test("Game Simulation: can't raise an amount superior to his balance"):
+        try{logique.transition(gameState)("Alexis", Event.PlayerAction(Choice.Raise(1200)))}
+        catch
+            case IllegalMoveException("not your turn")=> true
+            case _ => throw new IllegalMoveException("not your turn")
+
+
     test("Game Simulation: Test on the Raise action"):
         val action = logique.transition(gameState)("Alexis", Event.PlayerAction(Choice.Raise(100))).get(2)
         action match {
@@ -41,6 +48,12 @@ class TestLogic extends munit.FunSuite{
         assertEquals(smallBlind, "Alexis")
         assertEquals(highestBetter, "Alexis")
         assertEquals(turnBets, Map(("Alexis" -> 100), ("Jeanne" -> 0), ("Antoine" -> 0), ("Jakub" -> 0), ("Guillaume" -> 0)))
+
+    test("Game Simulation: should throw an exception because player can't check"):
+        try{logique.transition(gameState)("Jeanne", Event.PlayerAction(Choice.Check))}
+        catch
+            case IllegalMoveException("not your turn")=> true
+            case _ => throw new IllegalMoveException("not your turn")
 
     test("Game Simulation: Test on the Fold action"):
         val action = logique.transition(gameState)("Jeanne", Event.PlayerAction(Choice.Fold)).get(2)
@@ -203,6 +216,12 @@ class TestLogic extends munit.FunSuite{
         assertEquals(highestBetter, "Guillaume")
         assertEquals(turnBets, Map(("Alexis" -> 0), ("Jeanne" -> 0), ("Antoine" -> 200), ("Jakub" -> 0), ("Guillaume" -> 400)))
 
+    test("Game Simulation: Should throw an exception because it's not the player's turn"):
+        try{logique.transition(gameState)("Alexis", Event.PlayerAction(Choice.Raise(200)))}
+        catch
+            case IllegalMoveException("not your turn")=> true
+            case _ => throw new IllegalMoveException("not your turn")
+
     test("Game Simulation: Same test"):
         val action = logique.transition(gameState)("Antoine", Event.PlayerAction(Choice.Raise(200))).get(2)
         action match {
@@ -232,4 +251,14 @@ class TestLogic extends munit.FunSuite{
         assertEquals(activePlayer, Map(("Alexis" -> false), ("Jeanne" -> false), ("Antoine" -> false), ("Jakub" -> false), ("Guillaume" -> false)))
         assertEquals(smallBlind, "Jeanne")
         assertEquals(turnBets, Map(("Alexis" -> 0), ("Jeanne" -> 0), ("Antoine" -> 0), ("Jakub" -> 0), ("Guillaume" -> 0)))
+
+// basic tests on errors
+    test("Game Simulation: Sends an IllegalMoveException when it's not your turn"):
+        try{logique.transition(gameState)("Guillaume", Event.PlayerAction(Choice.Fold))}
+        catch
+            case IllegalMoveException("not your turn")=> true
+            case _ => throw new IllegalMoveException("not your turn")
+
+
+
 }
