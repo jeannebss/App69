@@ -2,7 +2,7 @@ package apps
 package app69
 
 class Tests extends munit.FunSuite:
-    val dealer = Set(Card(7, "♥️"), Card(6, "♥️"), Card(11, "♠️"), Card(5, "♥️"), Card(11, "♦️"))
+    val dealer = List(Card(7, "♥️"), Card(6, "♥️"), Card(11, "♠️"), Card(5, "♥️"), Card(11, "♦️"))
     val hand1 = Hand(Card(8, "♥️"), Card(4, "♥️"))
     val hand = (Card(2, "♣️"), Card(4, "♣️"))
     val game = Map(("1", hand1))
