@@ -19,7 +19,7 @@ class Logic extends StateMachine[Event, GameState, View]:
         description = "6poker9 is a strategic poker game designed for players of all skill " +
             "levels, emphasizing thoughtful decision-making and competitive, engaging gameplay.",
         year = 2024
-        )
+    )
 
     override val wire = Wire
 
@@ -34,9 +34,9 @@ class Logic extends StateMachine[Event, GameState, View]:
     import apps.Card.*
 
     override def init(clients: Seq[UserId]): GameState =
-        val allCards = Random.shuffle(AllCards.apply)
+        val allCards = Random.shuffle(AllCards.apply).toList
         val dealerCards = allCards.take(5)
-        val remainingCard = allCards.drop(5).toList
+        val remainingCard = allCards.drop(5)
         val players = clients.toList
         val playerCards = (0 until players.size).map(n => (players(n), Hand(remainingCard(n * 2), remainingCard(n*2+1)))).toMap
         GameState(
@@ -115,11 +115,12 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextSmallBlind = selectNextPlayer(nextActiveBlind, players.indexOf(smallBlind))
 
                             
-                            //val showCardPhase = state.copy() // Phase spécial ou les cartes sont montré, pas de transisition juste un wait  ??
+                            val showingPhase = CardReveal
+                            val showCardPhase = state.copy(phase = showingPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
 
                             val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
                             
-                            Seq(Action.Render(nextState))
+                            Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
 
                         val viewingPhase = PlayerChoice(choice)
                         val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
@@ -129,6 +130,8 @@ class Logic extends StateMachine[Event, GameState, View]:
                     case Call =>
                         //Modify all the balance
                         val diff = highestBet - turnBets(currentPlayer)
+                        if (diff > playerBalance(userId))
+                            then throw IllegalMoveException("You cannot call more than your balance")
                         val updateTurnBet = turnBets.updated(userId, highestBet)
                         val nextPlayerBalance = playerBalance.updated(userId, playerBalance(userId) - diff)
 
@@ -163,11 +166,12 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextSmallBlind = selectNextPlayer(nextActiveBlind, players.indexOf(smallBlind))
 
                             
-                            //val showCardPhase = state.copy() // Phase spécial ou les cartes sont montré, pas de transisition juste un wait  ??
+                            val showingPhase = CardReveal
+                            val showCardPhase = state.copy(phase = showingPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
 
                             val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
                             
-                            Seq(Action.Render(nextState))
+                            Seq(Action.Render(showCardPhase), Action.Pause(5000), Action.Render(nextState))
                         
                         val viewingPhase = PlayerChoice(choice)
                         val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet) 
@@ -211,11 +215,12 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val nextActivePlayer = nextPlayers.map( _ -> false).toMap
                             
-                            //val showCardPhase = state.copy() // Phase spécial ou les cartes sont montré, pas de transisition juste un wait  ??
+                            val showingPhase = CardReveal
+                            val showCardPhase = state.copy(phase = showingPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
 
                             val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
                             
-                            Seq(Action.Render(nextState))
+                            Seq(Action.Render(showingPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
 
                         val viewingPhase = PlayerChoice(choice)
                         val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet, activePlayer = nextActivePlayer) 
@@ -253,7 +258,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                     // penser au fait que les joueurs qui ont perdus ne servent a rien dans le restart
 
                     val newAllCards = Random.shuffle(AllCards.apply) // nouveau melange des cartes
-                    val newDealerCards = newAllCards.take(5) // nouvelles cartes du croupier, sur le model du init
+                    val newDealerCards = newAllCards.take(5).toList // nouvelles cartes du croupier, sur le model du init
                     val newRemainingCard = newAllCards.drop(5).toList // utile pour éviter d'utiliser les cartes du croupier
                                         // la ligne au dessus est mauvaise, il faut prendre les cartes dans le bon ordre, sauf si on s'en fout
                     val newPlayerCards = (0 until players.size).map(n => (players(n), Hand(newRemainingCard(n * 2), newRemainingCard(n*2+1)))).toMap
@@ -264,15 +269,14 @@ class Logic extends StateMachine[Event, GameState, View]:
                                                     dealerCards = newDealerCards,
                                                     playerCards = newPlayerCards, 
                                                     phase = InGame(0))
-                    Seq(Action.Render(newGameState))
+                    Seq(Action.Pause(1000), Action.Render(newGameState))
                 else
                     //Good
                     val newGameState = state.copy(activePlayer = newActivePlayer)
-                    Seq(Action.Render(newGameState))
+                    Seq(Action.Pause(1000), Action.Render(newGameState))
                                     
-            case (Reveal, _) => throw IllegalMoveException("Compare your cards to the other's") //TODO change message 
-            case (_) => throw IllegalMoveException("Unsupported phase") //TODO Implement if we want a endgame
-            // faire le cas ou on a un tapis
+            case (Reveal, _) => throw IllegalMoveException("Compare your cards to the other's")
+            case (_) => throw IllegalMoveException("Unsupported phase")
 
     override def project(state: GameState)(userId: UserId): View = ???
         /*

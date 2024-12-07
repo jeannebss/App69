@@ -33,8 +33,8 @@ object WinnerLogic:
         val groupCard = card.groupBy(_.value)
         groupCard.filter(_._2.size == num).keys.maxOption
 
-    def handValue(hand: Hand, dealer: Set[Card]): HandValue = 
-            val set = dealer + hand._1 + hand._2
+    def handValue(hand: Hand, dealer: List[Card]): HandValue = 
+            val set = dealer.toSet + hand._1 + hand._2
             if flush(set).isDefined then
                 (if straight(set.filter(_.suit == flush(set).get.suit)).isDefined then return HandValue.StraightFlush(straight(set.filter(_.suit == flush(set).get.suit)).get))
                 
@@ -54,7 +54,7 @@ object WinnerLogic:
                 else return HandValue.Pair(multi(2, set).get))
                     else return HandValue.High(set.map(_.value).max)
 
-    def winner(players: Map[UserId, Hand], dealer: Set[Card], activePlayer: Map[UserId, Boolean]): Winners =
+    def winner(players: Map[UserId, Hand], dealer: List[Card], activePlayer: Map[UserId, Boolean]): Winners =
         val activeHand = players.filter((id, h) => activePlayer(id))
         val handValue: Map[UserId, HandValue] = activeHand.map(tup => (tup._1, WinnerLogic.handValue(tup._2, dealer)))
         val max = handValue.maxBy(_._2.ordinal)._2
