@@ -14,6 +14,7 @@ object Wire extends AppWire[Event, View]:
     import Choice.* 
     import Phase.* 
     import PhaseView.*
+    import CardView.*
 
     object ChoiceWire extends WireFormat[Choice]:
         def encode(choice: Choice): Value =
@@ -133,15 +134,31 @@ object Wire extends AppWire[Event, View]:
 
     object CardViewWire extends WireFormat[CardView]: 
         def encode(cardView: CardView): Value =
-            Obj(
-                "PlayerCards" -> HandWire.encode(cardView.playerCards),
-                "DealerCards" -> SetWire(CardWire).encode(cardView.dealerCards)
-            )
+            cardView match
+                case InGameCards(playerCards, dealerCards) =>
+                    Obj(
+                        "tag" -> "InGameCards",
+                        "PlayerCards" -> HandWire.encode(playerCards),
+                        "DealerCards" -> VectorWire(CardWire).encode(dealerCards)
+                    )
+                case RevealCards(playerCards, dealerCards) =>
+                    Obj(
+                        "tag" -> "RevealCards",
+                        "PlayerCards" -> MapWire(StringWire, HandWire).encode(playerCards),
+                        "DealerCards" -> VectorWire(CardWire).encode(dealerCards)
+                    )
 
         def decode(json: Value): Try[CardView] = Try:
-            val playerCards = HandWire.decode(json("PlayerCards")).get
-            val dealerCards = SetWire(CardWire).decode(json("DealerCards")).get
-            CardView(playerCards, dealerCards)
+            json("tag").str match
+                case "InGameCards" =>
+                    val playerCards = HandWire.decode(json("PlayerCards")).get
+                    val dealerCards = VectorWire(CardWire).decode(json("DealerCards")).get
+                    InGameCards(playerCards, dealerCards)
+                case "RevealCards" =>
+                    val playerCards = MapWire(StringWire, HandWire).decode(json("PlayerCards")).get
+                    val dealerCards = VectorWire(CardWire).decode(json("DealerCards")).get
+                    RevealCards(playerCards, dealerCards)
+                case _ => throw new DecodingException("Not a valid card view!")
 
     override object viewFormat extends WireFormat[View]:
         

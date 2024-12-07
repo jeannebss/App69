@@ -49,7 +49,7 @@ case class GameState(
     playerBalance: Map[UserId, Balance],
     poolValue: Balance,
     currentPlayer: UserId,
-    dealerCards: Set[Card],
+    dealerCards: List[Card],
     playerCards: Map[UserId, Hand],
     phase: Phase,
     activePlayer: Map[UserId, Boolean],
@@ -76,10 +76,9 @@ enum PhaseView:
     case ChoiceMade(choice: Choice)
     case Winner
 
-case class CardView(
-    playerCards: Hand,
-    dealerCards: Set[Card]
-)
+enum CardView:
+    case InGameCards(playerCards: Hand, dealerCards: List[Card])
+    case RevealCards(playerCards: Map[UserId, Hand], dealerCards: List[Card])
 
 case class ScoresView(
     playerScores: Map[UserId, Balance],
