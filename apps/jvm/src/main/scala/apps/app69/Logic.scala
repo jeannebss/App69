@@ -6,6 +6,8 @@ import cs214.webapp.Action
 import cs214.webapp.server.{StateMachine}
 import ujson.Value
 import apps.*
+import cs214.webapp.UserId
+
 
 
 import scala.annotation.unused
@@ -97,7 +99,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                         //Passe au reveal si un joueur est tapis ou si on est a la fin du dernier round
                         val nextPhase = if turnOver then 
-                            if turn == 3 || playerBalance.exists((id, v) => v == 0) then Reveal else InGame(turn + 1)
+                            if turn == 3 || playerBalance.exists((id, v) => v == 0) || activePlayer.count((id, v) => v) <= 1 then Reveal else InGame(turn + 1)
                             else InGame(turn)
 
                         //Si reveal calcul du gagnant et update avant de switch to reveal
@@ -105,7 +107,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val playerInCard = playerCards.filter((id, v) => activePlayer(id))
                             val winner = WinnerLogic.winner(playerInCard, dealerCards, activePlayer) // détermine les Id du/des gagnants
                             val updatedPlayerBalance = playerBalance.map( (id, amount) =>
-                                val newAmount = if winner.contains(id) then amount + poolValue/winner.size else amount
+                                val newAmount = if winner.contains(id) then amount + nextPoolValue/winner.size else amount
                                 (id, newAmount))
 
 
@@ -123,11 +125,11 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
                             
                             Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
-
-                        val viewingPhase = PlayerChoice(turn, choice)
-                        val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
-                        val nextGamingState = state.copy(poolValue = nextPoolValue, currentPlayer = updateCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
-                        Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextGamingState))
+                        else
+                            val viewingPhase = PlayerChoice(turn, choice)
+                            val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
+                            val nextGamingState = state.copy(poolValue = nextPoolValue, currentPlayer = updateCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
+                            Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextGamingState))
 
                     case Call =>
                         //Modify all the balance
@@ -148,7 +150,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                         //Passe au reveal si un joueur est tapis ou si on est a la fin du dernier round
                         val nextPhase = if turnOver then 
-                            if turn == 3 || nextPlayerBalance.exists((id, v) => v == 0) then Reveal else InGame(turn + 1)
+                            if turn == 3 || nextPlayerBalance.exists((id, v) => v == 0) || activePlayer.count((id, v) => v) <= 1 then Reveal else InGame(turn + 1)
                             else InGame(turn)
 
                         //Si reveal calcul du gagnant et update avant de switch to reveal
@@ -156,7 +158,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val playerInCard = playerCards.filter((id, v) => activePlayer(id))
                             val winner = WinnerLogic.winner(playerInCard, dealerCards, activePlayer) // détermine les Id du/des gagnants
                             val updatedPlayerBalance = playerBalance.map( (id, amount) =>
-                                val newAmount = if winner.contains(id) then amount + poolValue/winner.size else amount
+                                val newAmount = if winner.contains(id) then amount + nextPoolValue/winner.size else amount
                                 (id, newAmount))
 
 
@@ -174,12 +176,12 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
                             
                             Seq(Action.Render(showCardPhase), Action.Pause(5000), Action.Render(nextState))
-                        
-                        val viewingPhase = PlayerChoice(turn, choice)
-                        val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet) 
-                        
-                        val nextState = state.copy(playerBalance = nextPlayerBalance, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
-                        Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
+                        else
+                            val viewingPhase = PlayerChoice(turn, choice)
+                            val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet) 
+                            
+                            val nextState = state.copy(playerBalance = nextPlayerBalance, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
+                            Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
 
                     case Fold =>
                         //Fold Action
@@ -193,42 +195,38 @@ class Logic extends StateMachine[Event, GameState, View]:
                         val nextPoolValue = if turnOver then poolValue + turnBets.values.sum else poolValue
                         val nextTurnBet = if turnOver then players.map(_ -> 0).toMap else turnBets
                         val nextCurrentPlayer = if turnOver then 
-                            selectNextPlayer(activePlayer, players.indexOf(smallBlind)) else updateCurrentPlayer
+                            selectNextPlayer(nextActivePlayer, players.indexOf(smallBlind)) else updateCurrentPlayer
 
                         //Passe au reveal si un joueur est tapis ou si on est a la fin du dernier round
                         val nextPhase = if turnOver then 
-                            if turn == 3 || playerBalance.exists((id, v) => v == 0) then Reveal else InGame(turn + 1)
+                            if turn == 3 || playerBalance.exists((id, v) => v == 0) || nextActivePlayer.count((id, v) => v) <= 1 then Reveal else InGame(turn + 1)
                             else InGame(turn)
 
                         //Si reveal calcul du gagnant et update avant de switch to reveal phase
                         if nextPhase == Reveal then
-                            val winner = WinnerLogic.winner(playerCards, dealerCards, activePlayer) // détermine les Id du/des gagnants
+                            val winner = WinnerLogic.winner(playerCards, dealerCards, nextActivePlayer)
                             val updatedPlayerBalance = playerBalance.map( (id, amount) =>
-                                val newAmount = if winner.contains(id) then amount + poolValue/winner.size else amount
-                                (id, newAmount))
-
-                            
-
+                                val newAmount = if winner.contains(id) then amount + nextPoolValue/winner.size else amount
+                                (id, newAmount)
+                            )
 
                             val nextPlayers = players.filter(id => updatedPlayerBalance(id) > 0)
-
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
-                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, players.indexOf(smallBlind))
+                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind) + 1)%players.size)
 
-                            val nextActivePlayer = nextPlayers.map( _ -> false).toMap
+                            val updateActivePlayer = nextPlayers.map( _ -> false).toMap
                             
                             val showingPhase = CardReveal
                             val showCardPhase = state.copy(phase = showingPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
 
-                            val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
-                            
-                            Seq(Action.Render(showingPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
+                            val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = updateActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = players.map(_ -> 0).toMap)
+                            Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
+                        else
+                            val viewingPhase = PlayerChoice(turn, choice)
+                            val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet, activePlayer = nextActivePlayer) 
 
-                        val viewingPhase = PlayerChoice(turn, choice)
-                        val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet, activePlayer = nextActivePlayer) 
-
-                        val nextState = state.copy(activePlayer = nextActivePlayer, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
-                        Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
+                            val nextState = state.copy(activePlayer = nextActivePlayer, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
+                            Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
 
                     case Raise(value) =>
                         //Players action link code, cannot turnOver if someone raise
@@ -236,14 +234,15 @@ class Logic extends StateMachine[Event, GameState, View]:
                         if (diff > playerBalance(userId) && value > maxRaise)
                             then throw IllegalMoveException("You cannot raise more than your balance")
                         val nextPlayerBalance = playerBalance.updated(userId, playerBalance(userId) - diff)
-                        val nextTurnBet = turnBets.updated(userId, turnBets(userId) + value)
+                        val nextTurnBet = turnBets.updated(userId, highestBet + value)
+                        val nextHighestBetter = userId
 
                         val nextCurrentPlayer = selectNextPlayer(activePlayer, (players.indexOf(currentPlayer)+1)%number)
 
                         val viewingPhase = PlayerChoice(turn, choice)
                         val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
 
-                        val nextState = state.copy(currentPlayer = nextCurrentPlayer, playerBalance = nextPlayerBalance, turnBets = nextTurnBet)
+                        val nextState = state.copy(currentPlayer = nextCurrentPlayer, playerBalance = nextPlayerBalance, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
                         Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
             case (InGame(turn),_) => throw IllegalMoveException("You can only play in this phase of the game")
 

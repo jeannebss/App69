@@ -155,7 +155,7 @@ class TestLogic extends munit.FunSuite{
         assertEquals(turnBets, Map(("Alexis" -> 0), ("Jeanne" -> 0), ("Antoine" -> 200), ("Jakub" -> 0), ("Guillaume" -> 200)))
 
     test("Game Simulation: Test on the transition to the next round"):
-        val action = logique.transition(gameState)("Guillaume", Event.PlayerAction(Choice.Call)).get(2)
+        val action = logique.transition(gameState)("Alexis", Event.PlayerAction(Choice.Fold)).get(2)
         action match {
                 case Action.Render(st) => gameState = st
                 case _ => throw new IllegalStateException("Unexpected action type")
@@ -228,23 +228,8 @@ class TestLogic extends munit.FunSuite{
         val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = gameState
         assertEquals(playerBalance, Map(("Alexis" -> 900), ("Jeanne" -> 1000), ("Antoine" -> 1800), ("Jakub" -> 1000), ("Guillaume" -> 300)))
         assertEquals(poolValue, 0)
-        assertEquals(currentPlayer, "Jeanne")
-        assertEquals(phase, Phase.InGame(2))
-        assertEquals(activePlayer, Map(("Alexis" -> true), ("Jeanne" -> true), ("Antoine" -> true), ("Jakub" -> true), ("Guillaume" -> true)))
+        assertEquals(phase, Phase.Reveal)
+        assertEquals(activePlayer, Map(("Alexis" -> false), ("Jeanne" -> false), ("Antoine" -> false), ("Jakub" -> false), ("Guillaume" -> false)))
         assertEquals(smallBlind, "Jeanne")
-        assertEquals(highestBetter, "Jeanne")
         assertEquals(turnBets, Map(("Alexis" -> 0), ("Jeanne" -> 0), ("Antoine" -> 0), ("Jakub" -> 0), ("Guillaume" -> 0)))
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
