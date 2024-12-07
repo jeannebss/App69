@@ -41,7 +41,7 @@ class Logic extends StateMachine[Event, GameState, View]:
         val playerCards = (0 until players.size).map(n => (players(n), Hand(remainingCard(n * 2), remainingCard(n*2+1)))).toMap
         GameState(
             players,
-            Map(clients.map(_ -> STARTING_BALANCE)*),
+            clients.map(_ -> STARTING_BALANCE).toMap,
             0,
             clients.head,
             dealerCards,
@@ -69,7 +69,8 @@ class Logic extends StateMachine[Event, GameState, View]:
         //C'est sur qu'on a du oublier des truc mais on se rapproche
         (phase, event) match
             case (InGame(turn), PlayerAction(choice)) =>
-                require(userId == currentPlayer)
+                if (userId == currentPlayer)
+                    then throw IllegalMoveException("It's not your turn")
 
                 val highestBet = turnBets.values.max
                 //Check the highest amount you can raise(Not sure)
@@ -79,7 +80,8 @@ class Logic extends StateMachine[Event, GameState, View]:
                 choice match
                     case Check =>
                         //No player actions
-                        require(turnBets(userId) == highestBet)
+                        if (turnBets(userId) == highestBet)
+                            then throw IllegalMoveException("You cannot check")
                         
                         val updateCurrentPlayer = selectNextPlayer(activePlayer, (players.indexOf(currentPlayer)+1)%number)
                         val turnOver = updateCurrentPlayer == highestBetter
@@ -118,13 +120,11 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
                             
                             Seq(Action.Render(nextState))
-                        
 
-                        //TODO reveal phase logic
-
-                        
-                        val nextState = state.copy(poolValue = nextPoolValue, currentPlayer = updateCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
-                        Seq(Action.Render(nextState))
+                        val viewingPhase = PlayerChoice(choice)
+                        val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
+                        val nextGamingState = state.copy(poolValue = nextPoolValue, currentPlayer = updateCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
+                        Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextGamingState))
 
                     case Call =>
                         //Modify all the balance
@@ -169,8 +169,11 @@ class Logic extends StateMachine[Event, GameState, View]:
                             
                             Seq(Action.Render(nextState))
                         
+                        val viewingPhase = PlayerChoice(choice)
+                        val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet) 
+                        
                         val nextState = state.copy(playerBalance = nextPlayerBalance, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
-                        Seq(Action.Render(nextState))
+                        Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
 
                     case Fold =>
                         //Fold Action
@@ -214,21 +217,27 @@ class Logic extends StateMachine[Event, GameState, View]:
                             
                             Seq(Action.Render(nextState))
 
+                        val viewingPhase = PlayerChoice(choice)
+                        val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet, activePlayer = nextActivePlayer) 
+
                         val nextState = state.copy(activePlayer = nextActivePlayer, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
-                        Seq(Action.Render(nextState))
+                        Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
 
                     case Raise(value) =>
                         //Players action link code, cannot turnOver if someone raise
                         val diff = highestBet + value - turnBets(currentPlayer)
-                        require(diff <= playerBalance(userId) && value <= maxRaise)
+                        if (diff <= playerBalance(userId) && value <= maxRaise)
+                            then throw IllegalMoveException("You cannot raise more than your balance")
                         val nextPlayerBalance = playerBalance.updated(userId, playerBalance(userId) - diff)
                         val nextTurnBet = turnBets.updated(userId, turnBets(userId) + value)
 
                         val nextCurrentPlayer = selectNextPlayer(activePlayer, (players.indexOf(currentPlayer)+1)%number)
 
-                        val nextState = state.copy(currentPlayer = nextCurrentPlayer, playerBalance = nextPlayerBalance, turnBets = nextTurnBet)
+                        val viewingPhase = PlayerChoice(choice)
+                        val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
 
-                        Seq(Action.Render(nextState))
+                        val nextState = state.copy(currentPlayer = nextCurrentPlayer, playerBalance = nextPlayerBalance, turnBets = nextTurnBet)
+                        Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
             case (InGame(turn),_) => throw IllegalMoveException("You can only play in this phase of the game")
 
             case (Reveal, Ready) => 
