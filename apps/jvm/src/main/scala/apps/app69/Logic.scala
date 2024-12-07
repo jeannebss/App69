@@ -265,7 +265,8 @@ class Logic extends StateMachine[Event, GameState, View]:
             case (_) => throw IllegalMoveException("Unsupported phase") //TODO Implement if we want a endgame
             // faire le cas ou on a un tapis
 
-    override def project(state: GameState)(userId: UserId): View = 
+    override def project(state: GameState)(userId: UserId): View = ???
+        /*
         val GameState(
             players,
             playerBalance,
@@ -306,3 +307,4 @@ class Logic extends StateMachine[Event, GameState, View]:
                 View(phaseView, scoresView, cardView)
 
             case _ => ??? //TODO transition state
+            */

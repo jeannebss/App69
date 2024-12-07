@@ -55,12 +55,20 @@ object Wire extends AppWire[Event, View]:
                         "phase" -> "InGame",
                         "turn" -> IntWire.encode(turn)
                     )
+                case PlayerChoice(choice) =>
+                    Obj(
+                        "phase" -> "PlayerChoice",
+                        "Choice" -> ChoiceWire.encode(choice)
+                    )
+                case CardReveal => Obj("phase" -> "CardReveal")
                 case Reveal  => Obj("phase" -> "Reveal")
                 case EndGame => Obj("phase" -> "EndGame")
 
         def decode(json: Value): Try[Phase] = Try:
             json("phase").str match
                 case "InGame" => InGame(IntWire.decode(json("turn")).get)
+                case "PlayerChoice" => PlayerChoice(ChoiceWire.decode(json("Choice")).get)
+                case "CardReveal" => CardReveal
                 case "Reveal" => Reveal
                 case "EndGame" => EndGame
                 case _ => throw new DecodingException("Not a valid phase!")
@@ -89,37 +97,25 @@ object Wire extends AppWire[Event, View]:
     object PhaseViewWire extends WireFormat[PhaseView]:
         def encode(phaseView: PhaseView): Value =
             phaseView match
-                case ChoiceSelection(currentPlayer: UserId) =>
-                    Obj(
-                        "tag" -> "ChoiceSelection",
-                        "CurrentPlayer" -> StringWire.encode(currentPlayer)
-                    )
-                case ChoiceMade(currentPlayer: UserId, choice: Choice) => 
+                case ChoiceSelection =>
+                    Obj("tag" -> "ChoiceSelection")
+                case ChoiceMade(choice: Choice) => 
                     Obj(
                         "tag" -> "ChoiceMade",
-                        "CurrentPlayer" -> StringWire.encode(currentPlayer),
                         "Choice" -> ChoiceWire.encode(choice)
                     )
-                case Winner(winner: UserId, balance: Balance) =>
-                    Obj(
-                        "tag" -> "Winner",
-                        "Winner" -> StringWire.encode(winner),
-                        "Balance" -> IntWire.encode(balance)
-                    )
+                case Winner =>
+                    Obj("tag" -> "Winner")
 
         def decode(json: Value): Try[PhaseView] = Try:
             json("tag").str match
                 case "ChoiceSelection" =>
-                    val currentPlayer = StringWire.decode(json("CurrentPlayer")).get
-                    ChoiceSelection(currentPlayer)
+                    ChoiceSelection
                 case "ChoiceMade" =>
-                    val currentPlayer = StringWire.decode(json("CurrentPlayer")).get
                     val choice = ChoiceWire.decode(json("Choice")).get
-                    ChoiceMade(currentPlayer, choice)
+                    ChoiceMade(choice)
                 case "Winner" =>
-                    val winner = StringWire.decode(json("Winner")).get
-                    val balance = IntWire.decode(json("Balance")).get
-                    Winner(winner, balance)
+                    Winner
                 case _ =>
                     throw new DecodingException("Not a valid phase view")
 

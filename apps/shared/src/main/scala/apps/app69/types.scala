@@ -1,9 +1,6 @@
 package apps
 
 import cs214.webapp.UserId
-import Value.*
-import apps.*
-import scala.collection.immutable.{SortedMap}
 
 type Suit = String
 
@@ -38,11 +35,10 @@ case class Card(value: Value, suit: Suit):
     
     def sameValue(other: Card): Boolean = 
         other.value == this.value
-
 object AllCards:
     def apply: Set[Card] =
         for
-            value <- AllValues
+            value <- Value.AllValues
             suit <- Suit.AllSuits
         yield Card(value, suit)
 
@@ -51,7 +47,7 @@ case class Hand(first: Card, second: Card)
 case class GameState(
     players: List[UserId],
     playerBalance: Map[UserId, Balance],
-    poolValue: Int,
+    poolValue: Balance,
     currentPlayer: UserId,
     dealerCards: Set[Card],
     playerCards: Map[UserId, Hand],
@@ -64,8 +60,8 @@ case class GameState(
 
 enum Phase:
     case InGame(turn: Int)
-    case GameAction
-    case CardReaveal
+    case PlayerChoice(choice: Choice)
+    case CardReveal
     case Reveal
     case EndGame 
 
@@ -76,9 +72,9 @@ case class View(
 )
 
 enum PhaseView:
-    case ChoiceSelection(currentPlayer: UserId)
-    case ChoiceMade(currentPlayer: UserId, choice: Choice)
-    case Winner(winnerId: UserId, balance: Balance)
+    case ChoiceSelection
+    case ChoiceMade(choice: Choice)
+    case Winner
 
 case class CardView(
     playerCards: Hand,
