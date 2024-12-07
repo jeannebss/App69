@@ -1,5 +1,5 @@
 package apps
-package poker
+package app69
 
 import cs214.webapp.UserId
 
@@ -54,7 +54,8 @@ object WinnerLogic:
                 else return HandValue.Pair(multi(2, set).get))
                     else return HandValue.High(set.map(_.value).max)
 
-    def winner(players: Map[UserId, Hand], dealer: Set[Card]): Winners =
-        val handValue: Map[UserId, HandValue] = players.map(tup => (tup._1, WinnerLogic.handValue(tup._2, dealer)))
+    def winner(players: Map[UserId, Hand], dealer: Set[Card], activePlayer: Map[UserId, Boolean]): Winners =
+        val activeHand = players.filter((id, h) => activePlayer(id))
+        val handValue: Map[UserId, HandValue] = activeHand.map(tup => (tup._1, WinnerLogic.handValue(tup._2, dealer)))
         val max = handValue.maxBy(_._2.ordinal)._2
         handValue.filter(tup => tup._2 == max).keys.toSet

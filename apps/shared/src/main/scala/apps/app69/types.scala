@@ -49,7 +49,8 @@ object AllCards:
 case class Hand(first: Card, second: Card)
 
 case class GameState(
-    playerBalance: SortedMap[UserId, Balance],
+    players: List[UserId],
+    playerBalance: Map[UserId, Balance],
     poolValue: Int,
     currentPlayer: UserId,
     dealerCards: Set[Card],
@@ -63,6 +64,8 @@ case class GameState(
 
 enum Phase:
     case InGame(turn: Int)
+    case GameAction
+    case CardReaveal
     case Reveal
     case EndGame 
 
