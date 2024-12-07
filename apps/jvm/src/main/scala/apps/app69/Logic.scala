@@ -32,6 +32,7 @@ class Logic extends StateMachine[Event, GameState, View]:
     import apps.Choice.* 
     import apps.PhaseView.*
     import apps.Card.*
+    import apps.CardView.*
 
     override def init(clients: Seq[UserId]): GameState =
         val allCards = Random.shuffle(AllCards.apply).toList
@@ -278,8 +279,7 @@ class Logic extends StateMachine[Event, GameState, View]:
             case (Reveal, _) => throw IllegalMoveException("Compare your cards to the other's")
             case (_) => throw IllegalMoveException("Unsupported phase")
 
-    override def project(state: GameState)(userId: UserId): View = ???
-        /*
+    override def project(state: GameState)(userId: UserId): View =
         val GameState(
             players,
             playerBalance,
@@ -294,30 +294,31 @@ class Logic extends StateMachine[Event, GameState, View]:
             turnBets
         ) = state
         
+        val scoresView = ScoresView(playerBalance, poolValue)
         phase match
             case InGame(turn) =>
-                val scoresView = ScoresView(playerBalance, poolValue)
-                val cardView = CardView(
+                val cardView = InGameCards(
                     playerCards(userId), 
-                    dealerCards.take(
-                        if turn == 0 then 0
-                        else if turn == 1 then 3
-                        else if turn == 2 then 4
-                        else 5
-                    )
+                    dealerCards.take(if turn <= 3 then turn else 5).toVector
                 )
-                val phaseView = ChoiceSelection(currentPlayer)
+                val phaseView = ChoiceSelection
                 View(phaseView, scoresView, cardView)
-            case Reveal => 
-                val scoresView = ScoresView(playerBalance, poolValue)
-                val cardView = CardView(playerCards(userId), dealerCards) // needs to know turn
-                val phaseView = ChoiceMade(currentPlayer, Choice.Call) // adapt
-                View(phaseView, scoresView, cardView)
-            case EndGame => 
-                val scoresView = ScoresView(playerBalance, poolValue)
-                val cardView = CardView(playerCards(userId), dealerCards) // no need 
-                val phaseView = ChoiceSelection(currentPlayer) // No choice
+            
+            case PlayerChoice(turn, choice) =>
+                val cardView = InGameCards(
+                    playerCards(userId), 
+                    dealerCards.take(if turn <= 3 then turn else 5).toVector
+                )
+                val phaseView = ChoiceMade(choice)
                 View(phaseView, scoresView, cardView)
 
-            case _ => ??? //TODO transition state
-            */
+            case CardReveal | Reveal =>
+                val cardView = RevealCards(
+                    playerCards,
+                    dealerCards.toVector
+                )
+                val phaseView = Winner
+                View(phaseView, scoresView, cardView)
+
+            case EndGame => 
+                throw new IllegalMoveException("Not implemented yey!")

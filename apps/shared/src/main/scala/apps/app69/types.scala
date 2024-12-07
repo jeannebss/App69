@@ -60,7 +60,7 @@ case class GameState(
 
 enum Phase:
     case InGame(turn: Int)
-    case PlayerChoice(choice: Choice)
+    case PlayerChoice(turn: Int, choice: Choice)
     case CardReveal
     case Reveal
     case EndGame 
@@ -77,8 +77,8 @@ enum PhaseView:
     case Winner
 
 enum CardView:
-    case InGameCards(playerCards: Hand, dealerCards: List[Card])
-    case RevealCards(playerCards: Map[UserId, Hand], dealerCards: List[Card])
+    case InGameCards(playerCards: Hand, dealerCards: Vector[Card])
+    case RevealCards(playerCards: Map[UserId, Hand], dealerCards: Vector[Card])
 
 case class ScoresView(
     playerScores: Map[UserId, Balance],

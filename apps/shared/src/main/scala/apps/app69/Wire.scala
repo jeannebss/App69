@@ -56,10 +56,11 @@ object Wire extends AppWire[Event, View]:
                         "phase" -> "InGame",
                         "turn" -> IntWire.encode(turn)
                     )
-                case PlayerChoice(choice) =>
+                case PlayerChoice(turn, choice) =>
                     Obj(
                         "phase" -> "PlayerChoice",
-                        "Choice" -> ChoiceWire.encode(choice)
+                        "turn" -> IntWire.encode(turn),
+                        "choice" -> ChoiceWire.encode(choice)
                     )
                 case CardReveal => Obj("phase" -> "CardReveal")
                 case Reveal  => Obj("phase" -> "Reveal")
@@ -68,7 +69,11 @@ object Wire extends AppWire[Event, View]:
         def decode(json: Value): Try[Phase] = Try:
             json("phase").str match
                 case "InGame" => InGame(IntWire.decode(json("turn")).get)
-                case "PlayerChoice" => PlayerChoice(ChoiceWire.decode(json("Choice")).get)
+                case "PlayerChoice" => 
+                    PlayerChoice(
+                        IntWire.decode(json("turn")).get,
+                        ChoiceWire.decode(json("choice")).get
+                    )
                 case "CardReveal" => CardReveal
                 case "Reveal" => Reveal
                 case "EndGame" => EndGame
