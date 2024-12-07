@@ -70,8 +70,9 @@ class Logic extends StateMachine[Event, GameState, View]:
         //C'est sur qu'on a du oublier des truc mais on se rapproche
         (phase, event) match
             case (InGame(turn), PlayerAction(choice)) =>
-                if (userId == currentPlayer)
-                    then throw IllegalMoveException("It's not your turn")
+                if (userId != currentPlayer) then {
+                    throw IllegalMoveException("It's not your turn")
+                }
 
                 val highestBet = turnBets.values.max
                 //Check the highest amount you can raise(Not sure)
@@ -81,7 +82,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 choice match
                     case Check =>
                         //No player actions
-                        if (turnBets(userId) == highestBet)
+                        if (turnBets(userId) != highestBet)
                             then throw IllegalMoveException("You cannot check")
                         
                         val updateCurrentPlayer = selectNextPlayer(activePlayer, (players.indexOf(currentPlayer)+1)%number)
@@ -232,7 +233,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                     case Raise(value) =>
                         //Players action link code, cannot turnOver if someone raise
                         val diff = highestBet + value - turnBets(currentPlayer)
-                        if (diff <= playerBalance(userId) && value <= maxRaise)
+                        if (diff > playerBalance(userId) && value > maxRaise)
                             then throw IllegalMoveException("You cannot raise more than your balance")
                         val nextPlayerBalance = playerBalance.updated(userId, playerBalance(userId) - diff)
                         val nextTurnBet = turnBets.updated(userId, turnBets(userId) + value)
