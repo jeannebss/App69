@@ -7,6 +7,7 @@ import cs214.webapp.client.*
 import cs214.webapp.client.graphics.{WebClientAppInstance}
 import org.scalajs.dom
 import scalatags.JsDom.all._
+import apps.CardView.*
 
 import scala.scalajs.js.annotation.JSExportTopLevel
 
@@ -27,19 +28,17 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
     override def render(userId: UserId, view: View): Frag =
         val View(phaseView,scoresView,cardView) = view
         phaseView match
-            case PhaseView.ChoiceSelection => ChoiceSelectionUIrender(userId, view)
-            case PhaseView.ChoiceMade(choice) => ChoiceMadeUIrender(userId, view)
-            case PhaseView.Winner => WinnerUIrender(view)
+            case PhaseView.ChoiceSelection => InGameCardsUIrender(true,userId, scoresView, cardView.asInstanceOf[InGameCards])
+            case PhaseView.ChoiceMade(choice) => InGameCardsUIrender(false,userId, scoresView, cardView.asInstanceOf[InGameCards])
+            case PhaseView.Winner => WinnerUIrender(scoresView, cardView.asInstanceOf[RevealCards])
 
-
-    def ChoiceSelectionUIrender(userId: UserId, view: View): Frag = 
-        val View(phaseView,scoresView,cardView) = view
-        val playerCards = cardView.playerCards.first.toString + cardView.playerCards.second.toString
-        val handOfDealer = cardView.dealerCards.map(_.toString).mkString
+    def InGameCardsUIrender(isSelecting: Boolean, userId: UserId,scoresView: ScoresView, cardView : InGameCards): Frag =
+        val playerCards = CardSymbols.apply(cardView.playerCards.first) + CardSymbols.apply(cardView.playerCards.second)
+        val handOfDealer = cardView.dealerCards.map(CardSymbols.apply).mkString
         val poolBalance = scoresView.poolBalance
         val playerScores = scoresView.playerScores
         val players = scoresView.playerScores.keys.toList.filter(_ != userId)
-        
+
         frag(
             html(
                 head(
@@ -87,8 +86,9 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                             div(cls := "cards")("🂠🂠"),
                             div(cls := "balance")("Balance :", playerScores(players(4)))
                         )
-                        ),
-                    div(cls := "controls")(
+                    ),
+                    if isSelecting then {
+                        div(cls := "controls")(
                         button(id := "raise", onclick:={ () => 
                             val inputElement = dom.document.getElementById("bet").asInstanceOf[dom.html.Input]
                             val betValue = inputElement.value
@@ -107,72 +107,17 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                         button(id := "call", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Call))})("Call"),
                         button(id := "fold",onclick:={ () => sendEvent(Event.PlayerAction(Choice.Fold))})("Fold")
                     )
+                }
                 )
             )
-        )
-    
-    def ChoiceMadeUIrender(userId: UserId, view: View): Frag =
-        val View(phaseView,scoresView,cardView) = view
-        val playerCards = cardSymbols(cardView.playerCards.first) + cardSymbols(cardView.playerCards.second)
-        val handOfDealer = cardView.dealerCards.map(cardSymbols).mkString
+        )        
+
+    def WinnerUIrender(scoresView: ScoresView, cardView: RevealCards): Frag =
+        val allCards = cardView.playerCards.map((userId, hand) => userId -> (CardSymbols.apply(hand.first) + CardSymbols.apply(hand.second)))
+        val handOfDealer = cardView.dealerCards.map(CardSymbols.apply).mkString
         val poolBalance = scoresView.poolBalance
         val playerScores = scoresView.playerScores
         val players = scoresView.playerScores.keys.toList.filter(_ != userId)
-        
-        frag(
-            html(
-                head(
-                    link(
-                        href := "https://fonts.googleapis.com/css2?family=Inknut+Antiqua&display=swap",
-                        rel := "stylesheet"
-                    )
-                ),
-                body(
-                    div(cls := "game-container")(
-                        div(cls := "game-table")(
-                        div(cls := "space-before-table")(),
-                        div(cls := "all-table")(
-                            div(cls := "center-table")(
-                            div(cls := "deck")(
-                                span(cls := "turned-cards")("🂠" * (5 - cardView.dealerCards.size)),
-                                span(cls := "cards-on-table")(handOfDealer)
-                            ),
-                            div(cls := "amount-in-pool")("Amount in the pool:", poolBalance)),
-                            div(cls := "pot")(span(cls := "money")("💰"))
-                            )
-                        ),
-                        div(cls := "player", id := "player1")(
-                            div(cls := "player-name")(players(0)),
-                            div(cls := "cards")("🂠🂠"),
-                            div(cls := "balance")("Balance :", playerScores(players(0)))
-                        ),
-                        div(cls := "player", id := "player2")(
-                            div(cls := "player-name")(players(1)),
-                            div(cls := "cards")("🂠🂠"),
-                            div(cls := "balance")("Balance :", playerScores(players(1)))
-                        ),
-                        div(cls := "player", id := "player3")(
-                            div(cls := "player-name")(userId),
-                            div(cls := "cards")(playerCards),
-                            div(cls := "balance")("Balance :", playerScores(userId))
-                        ),
-                        div(cls := "player", id := "player4")(
-                            div(cls := "player-name")(players(3)),
-                            div(cls := "cards")("🂠🂠"),
-                            div(cls := "balance")("Balance :", playerScores(players(3)))
-                        ),
-                        div(cls := "player", id := "player5")(
-                            div(cls := "player-name")(players(4)),
-                            div(cls := "cards")("🂠🂠"),
-                            div(cls := "balance")("Balance :", playerScores(players(4)))
-                        )
-                    )
-                )
-            )
-        )
-    
-    def WinnerUIrender(view: View): Frag =
-        val View(phaseView,scoresView,cardView) = view
         val winner = scoresView.playerScores.maxBy(_._2)._1
         val balance = scoresView.playerScores(winner)
 
