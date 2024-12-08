@@ -82,6 +82,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                             div(cls := "pot")(span(cls := "money")("💰"))
                             )
                         ),
+                        
                         div(cls := "player", id := "player1")(
                             div(cls := "player-name")(playersInGame(0)),
                             div(cls := "cards")(if playersInGame(0)=="" then "" else if (endOfTurn) then playerCards(playersInGame(0)) else"🂠🂠"),
@@ -94,7 +95,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                         ),
                         div(cls := "player", id := "player3")(
                             div(cls := "player-name")(userId),
-                            div(cls := "cards")(playerCards(userId)),
+                            div(cls := "cards")(playerCards.getOrElse(userId, "")),
                             div(cls := "balance")("Balance :", playersScores(userId))
                         ),
                         div(cls := "player", id := "player4")(
@@ -109,17 +110,20 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                         )
                     ),
                     div(cls := "controls")(
-                    button(id := "raise", onclick:={ () => 
-                        val inputElement = dom.document.getElementById("bet").asInstanceOf[dom.html.Input]
-                        val betValue = inputElement.value
-                        sendEvent(Event.PlayerAction(Choice.Raise(betValue.toInt)))})
-                        (
+                    button(id := "raise")(
                         "Raise: ",
                         input(
                             `type` := "text",
                             id := "bet",
                             placeholder := "Enter bet",
-                            size := 6
+                            size := 6,
+                            onkeydown := { (event: dom.KeyboardEvent) =>
+                                if event.key == "Enter" then {
+                                    val inputElement = event.target.asInstanceOf[dom.html.Input]
+                                    val betValue = inputElement.value
+                                    sendEvent(Event.PlayerAction(Choice.Raise(betValue.toInt)))
+                                }
+                            }
                         ),
                         " CHF"
                         ),
@@ -245,6 +249,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
 
     #raise{
         background-color: #4ba652;
+        cursor: default;
     }
     #check{
         background-color: #8e8e8e;
