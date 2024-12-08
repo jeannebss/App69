@@ -36,18 +36,21 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                 )
             ),
         phaseView match
-            case ChoiceSelection => InGameCardsUIrender(false, userId, scoresView, cardView)
-            case ChoiceMade(choice) => InGameCardsUIrender(false, userId, scoresView, cardView)
-            case Winner => InGameCardsUIrender(true, userId, scoresView, cardView)
+            case ChoiceSelection => InGameCardsUIrender(true, false, userId, scoresView, cardView)
+            case ChoiceMade(choice) => InGameCardsUIrender(false, false, userId, scoresView, cardView)
+            case Winner => InGameCardsUIrender(false, true, userId, scoresView, cardView)
         )
         
-    def InGameCardsUIrender(endOfTurn: Boolean, userId: UserId, scoresView: ScoresView, cardView : CardView): Frag =
+    def InGameCardsUIrender(isSelecting: Boolean, endOfTurn: Boolean, userId: UserId, scoresView: ScoresView, cardView : CardView): Frag =
         val playerCards: Map[String,String] = cardView match
-            case InGameCards(playerCards, _) => Map(userId -> (CardSymbols.apply(playerCards.first) + CardSymbols.apply(playerCards.second)))
-            case RevealCards(playerCards, _) => playerCards.map((userId, hand) => userId -> (CardSymbols.apply(hand.first) + CardSymbols.apply(hand.second)))
+            case InGameCards(playerCards, _) => Map(userId -> (CardSymbols(playerCards.first) + CardSymbols(playerCards.second)))
+            case RevealCards(playerCards, _) => playerCards.map((userId, hand) => userId -> (CardSymbols(hand.first) + CardSymbols(hand.second)))
         val handOfDealer = cardView match
             case InGameCards(_, dealerCards) => dealerCards.map(CardSymbols.apply).mkString
             case RevealCards(_, dealerCards) => dealerCards.map(CardSymbols.apply).mkString
+        val handOfDealerNumber = cardView match
+            case InGameCards(_, dealerCards) => dealerCards.size
+            case RevealCards(_, dealerCards) => dealerCards.size
     
         val poolBalance = scoresView.poolBalance
         val playersScores = scoresView.playerScores
@@ -55,19 +58,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
         val playersInGame = (0 to 4).map(i => players.lift(i).getOrElse("")).toList
         val winner = scoresView.playerScores.maxBy(_._2)._1
         val winnerBalance = scoresView.playerScores(winner)
-
-        if (endOfTurn) then {
-            frag(
-            div(cls := "winner-notification")(
-            h2("Game Over"),
-            p(
-            "The winner is ",
-            b(winner),
-            " with a balance of ",
-            span(cls := "balance")(s"$winnerBalance CHF"),
-            "."
-            )))
-        } else {
+        
         frag(
                 body(
                     div(cls := "game-container")(
@@ -75,10 +66,10 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                         div(cls := "all-table")(
                             div(cls := "center-table")(
                             div(cls := "deck")(
-                                span(cls := "turned-cards")("🂠" * (5 - handOfDealer.length())),
-                                span(cls := "cards-on-table")(handOfDealer)
+                                span(cls := "turned-cards")("🂠" * (5 - handOfDealerNumber)),
+                                span(cls := "cards-on-table")(handOfDealer),
                             ),
-                            div(cls := "amount-in-pool")("Amount in the pool:", poolBalance)),
+                            div(cls := "amount-in-pool")("Amount in the pool: ", poolBalance," CHF")),
                             div(cls := "pot")(span(cls := "money")("💰"))
                             )
                         ),
@@ -109,31 +100,42 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                             div(cls := "balance")("Balance :", if playersInGame(3)=="" then "" else playersScores(playersInGame(3)))
                         )
                     ),
-                    div(cls := "controls")(
-                    button(id := "raise")(
-                        "Raise: ",
-                        input(
-                            `type` := "text",
-                            id := "bet",
-                            placeholder := "Enter bet",
-                            size := 6,
-                            onkeydown := { (event: dom.KeyboardEvent) =>
-                                if event.key == "Enter" then {
-                                    val inputElement = event.target.asInstanceOf[dom.html.Input]
-                                    val betValue = inputElement.value
-                                    sendEvent(Event.PlayerAction(Choice.Raise(betValue.toInt)))
+                    if (endOfTurn) then {
+                        frag(
+                            div(cls := "controls")(
+                                button(id := "continue", onclick:={ () => sendEvent(Event.Ready)})("Click if you're ready")
+                            )
+                        )
+                    } else if (isSelecting) {
+                    frag(
+                        div(cls := "controls")(
+                        button(id := "raise")(
+                            "Raise: ",
+                            input(
+                                `type` := "text",
+                                id := "bet",
+                                placeholder := "Enter bet",
+                                size := 6,
+                                onkeydown := { (event: dom.KeyboardEvent) =>
+                                    if event.key == "Enter" then {
+                                        val inputElement = event.target.asInstanceOf[dom.html.Input]
+                                        val betValue = inputElement.value
+                                        sendEvent(Event.PlayerAction(Choice.Raise(betValue.toInt)))
+                                    }
                                 }
-                            }
-                        ),
-                        " CHF"
-                        ),
-                    button(id := "check", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Check))})("Check"),
-                    button(id := "call", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Call))})("Call"),
-                    button(id := "fold",onclick:={ () => sendEvent(Event.PlayerAction(Choice.Fold))})("Fold")
-                )  
+                            ),
+                            " CHF"
+                            ),
+                        button(id := "check", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Check))})("Check"),
+                        button(id := "call", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Call))})("Call"),
+                        button(id := "fold",onclick:={ () => sendEvent(Event.PlayerAction(Choice.Fold))})("Fold")
+                        ) 
+                    )
+                } else {
+                    frag()
+                }
             )
-        )   
-    }   
+        )    
 
     override def css: String = super.css + """
     html{
@@ -229,8 +231,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
 
     .controls{
         position: absolute;
-        bottom: 1%; 
-        left: 5%;   
+        bottom: 1%;   
         display: flex;
         flex-direction: row;
         align-items: flex-end;  
@@ -247,6 +248,11 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
         font-family: 'Inknut Antiqua', serif;
     }
 
+    #continue{
+        background-color:black;
+        color:white;
+        padding: 5px 25px;
+    }
     #raise{
         background-color: #4ba652;
         cursor: default;
