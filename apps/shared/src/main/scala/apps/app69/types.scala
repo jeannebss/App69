@@ -18,7 +18,7 @@ object Suit:
     val AllSuits = Set(Heart, Club, Spade, Diamond)
     def order(suit: Suit): Int =
         suit match
-            case "♠" => 0
+            case "♠️" => 0
             case "♥️" => 1
             case "♦" => 2
             case "♣️" => 3
@@ -46,8 +46,16 @@ case class Card(value: Value, suit: Suit):
 object CardSymbols:
     def apply(card: Card): String =
         val base = 0x1F0A1
-        val suitDecalage = Suit.order(card.suit)
-        (base + (suitDecalage*16)%14 + card.value).toString()
+        val suitDecalage = Suit.order(card.suit)*16
+        val cardValueOffset = card.value match
+            case 12 => 12
+            case 13 => 13
+            case 14 => 0
+            case _ => card.value - 1
+        val unicode = (base + suitDecalage + cardValueOffset)
+        new String(Character.toChars(unicode))
+
+
 
 object AllCards:
     def apply: Set[Card] =

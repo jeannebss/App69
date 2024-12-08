@@ -8,6 +8,7 @@ import cs214.webapp.client.graphics.{WebClientAppInstance}
 import org.scalajs.dom
 import scalatags.JsDom.all._
 import apps.CardView.*
+import apps.PhaseView.*
 
 import scala.scalajs.js.annotation.JSExportTopLevel
 
@@ -27,34 +28,54 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
 
     override def render(userId: UserId, view: View): Frag =
         val View(phaseView,scoresView,cardView) = view
-        phaseView match
-            case PhaseView.ChoiceSelection => InGameCardsUIrender(true,userId, scoresView, cardView.asInstanceOf[InGameCards])
-            case PhaseView.ChoiceMade(choice) => InGameCardsUIrender(false,userId, scoresView, cardView.asInstanceOf[InGameCards])
-            case PhaseView.Winner => WinnerUIrender(scoresView, cardView.asInstanceOf[RevealCards])
-
-    def InGameCardsUIrender(isSelecting: Boolean, userId: UserId,scoresView: ScoresView, cardView : InGameCards): Frag =
-        val playerCards = CardSymbols.apply(cardView.playerCards.first) + CardSymbols.apply(cardView.playerCards.second)
-        val handOfDealer = cardView.dealerCards.map(CardSymbols.apply).mkString
-        val poolBalance = scoresView.poolBalance
-        val playerScores = scoresView.playerScores
-        val players = scoresView.playerScores.keys.toList.filter(_ != userId)
-
         frag(
-            html(
-                head(
-                    link(
-                        href := "https://fonts.googleapis.com/css2?family=Inknut+Antiqua&display=swap",
-                        rel := "stylesheet"
-                    )
-                ),
+            head(
+                link(
+                    href := "https://fonts.googleapis.com/css2?family=Inknut+Antiqua&display=swap",
+                    rel := "stylesheet"
+                )
+            ),
+        phaseView match
+            case ChoiceSelection => InGameCardsUIrender(false, userId, scoresView, cardView)
+            case ChoiceMade(choice) => InGameCardsUIrender(false, userId, scoresView, cardView)
+            case Winner => InGameCardsUIrender(true, userId, scoresView, cardView)
+        )
+        
+    def InGameCardsUIrender(endOfTurn: Boolean, userId: UserId, scoresView: ScoresView, cardView : CardView): Frag =
+        val playerCards: Map[String,String] = cardView match
+            case InGameCards(playerCards, _) => Map(userId -> (CardSymbols.apply(playerCards.first) + CardSymbols.apply(playerCards.second)))
+            case RevealCards(playerCards, _) => playerCards.map((userId, hand) => userId -> (CardSymbols.apply(hand.first) + CardSymbols.apply(hand.second)))
+        val handOfDealer = cardView match
+            case InGameCards(_, dealerCards) => dealerCards.map(CardSymbols.apply).mkString
+            case RevealCards(_, dealerCards) => dealerCards.map(CardSymbols.apply).mkString
+    
+        val poolBalance = scoresView.poolBalance
+        val playersScores = scoresView.playerScores
+        val players = scoresView.playerScores.keys.toList.filter(_ != userId)
+        val playersInGame = (0 to 4).map(i => players.lift(i).getOrElse("")).toList
+        val winner = scoresView.playerScores.maxBy(_._2)._1
+        val winnerBalance = scoresView.playerScores(winner)
+
+        if (endOfTurn) then {
+            frag(
+            div(cls := "winner-notification")(
+            h2("Game Over"),
+            p(
+            "The winner is ",
+            b(winner),
+            " with a balance of ",
+            span(cls := "balance")(s"$winnerBalance CHF"),
+            "."
+            )))
+        } else {
+        frag(
                 body(
                     div(cls := "game-container")(
                         div(cls := "game-table")(
-                        div(cls := "space-before-table")(),
                         div(cls := "all-table")(
                             div(cls := "center-table")(
                             div(cls := "deck")(
-                                span(cls := "turned-cards")("🂠" * (5 - cardView.dealerCards.size)),
+                                span(cls := "turned-cards")("🂠" * (5 - handOfDealer.length())),
                                 span(cls := "cards-on-table")(handOfDealer)
                             ),
                             div(cls := "amount-in-pool")("Amount in the pool:", poolBalance)),
@@ -62,75 +83,53 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                             )
                         ),
                         div(cls := "player", id := "player1")(
-                            div(cls := "player-name")(players(0)),
-                            div(cls := "cards")("🂠🂠"),
-                            div(cls := "balance")("Balance :", playerScores(players(0)))
+                            div(cls := "player-name")(playersInGame(0)),
+                            div(cls := "cards")(if playersInGame(0)=="" then "" else if (endOfTurn) then playerCards(playersInGame(0)) else"🂠🂠"),
+                            div(cls := "balance")("Balance :", if playersInGame(0)=="" then "" else playersScores(playersInGame(0)))
                         ),
                         div(cls := "player", id := "player2")(
-                            div(cls := "player-name")(players(1)),
-                            div(cls := "cards")("🂠🂠"),
-                            div(cls := "balance")("Balance :", playerScores(players(1)))
+                            div(cls := "player-name")(playersInGame(1)),
+                            div(cls := "cards")(if playersInGame(1)=="" then "" else if (endOfTurn) then playerCards(playersInGame(1)) else"🂠🂠"),
+                            div(cls := "balance")("Balance :", if playersInGame(1)=="" then "" else playersScores(playersInGame(1)))
                         ),
                         div(cls := "player", id := "player3")(
                             div(cls := "player-name")(userId),
-                            div(cls := "cards")(playerCards),
-                            div(cls := "balance")("Balance :", playerScores(userId))
+                            div(cls := "cards")(playerCards(userId)),
+                            div(cls := "balance")("Balance :", playersScores(userId))
                         ),
                         div(cls := "player", id := "player4")(
-                            div(cls := "player-name")(players(3)),
-                            div(cls := "cards")("🂠🂠"),
-                            div(cls := "balance")("Balance :", playerScores(players(3)))
+                            div(cls := "player-name")(playersInGame(2)),
+                            div(cls := "cards")(if playersInGame(2)=="" then "" else if (endOfTurn) then playerCards(playersInGame(2)) else"🂠🂠"),
+                            div(cls := "balance")("Balance :", if playersInGame(2)=="" then "" else playersScores(playersInGame(2)))
                         ),
                         div(cls := "player", id := "player5")(
-                            div(cls := "player-name")(players(4)),
-                            div(cls := "cards")("🂠🂠"),
-                            div(cls := "balance")("Balance :", playerScores(players(4)))
+                            div(cls := "player-name")(playersInGame(3)),
+                            div(cls := "cards")(if playersInGame(3)=="" then "" else if (endOfTurn) then playerCards(playersInGame(3)) else"🂠🂠"),
+                            div(cls := "balance")("Balance :", if playersInGame(3)=="" then "" else playersScores(playersInGame(3)))
                         )
                     ),
-                    if isSelecting then {
-                        div(cls := "controls")(
-                        button(id := "raise", onclick:={ () => 
-                            val inputElement = dom.document.getElementById("bet").asInstanceOf[dom.html.Input]
-                            val betValue = inputElement.value
-                            sendEvent(Event.PlayerAction(Choice.Raise(betValue.toInt)))})
-                            (
-                            "Raise: ",
-                            input(
-                                `type` := "text",
-                                id := "bet",
-                                placeholder := "Enter bet",
-                                size := 6
-                            ),
-                            " CHF"
-                            ),
-                        button(id := "check", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Check))})("Check"),
-                        button(id := "call", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Call))})("Call"),
-                        button(id := "fold",onclick:={ () => sendEvent(Event.PlayerAction(Choice.Fold))})("Fold")
-                    )
-                }
-                )
+                    div(cls := "controls")(
+                    button(id := "raise", onclick:={ () => 
+                        val inputElement = dom.document.getElementById("bet").asInstanceOf[dom.html.Input]
+                        val betValue = inputElement.value
+                        sendEvent(Event.PlayerAction(Choice.Raise(betValue.toInt)))})
+                        (
+                        "Raise: ",
+                        input(
+                            `type` := "text",
+                            id := "bet",
+                            placeholder := "Enter bet",
+                            size := 6
+                        ),
+                        " CHF"
+                        ),
+                    button(id := "check", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Check))})("Check"),
+                    button(id := "call", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Call))})("Call"),
+                    button(id := "fold",onclick:={ () => sendEvent(Event.PlayerAction(Choice.Fold))})("Fold")
+                )  
             )
-        )        
-
-    def WinnerUIrender(scoresView: ScoresView, cardView: RevealCards): Frag =
-        val allCards = cardView.playerCards.map((userId, hand) => userId -> (CardSymbols.apply(hand.first) + CardSymbols.apply(hand.second)))
-        val handOfDealer = cardView.dealerCards.map(CardSymbols.apply).mkString
-        val poolBalance = scoresView.poolBalance
-        val playerScores = scoresView.playerScores
-        val players = scoresView.playerScores.keys.toList.filter(_ != userId)
-        val winner = scoresView.playerScores.maxBy(_._2)._1
-        val balance = scoresView.playerScores(winner)
-
-        div(cls := "winner-notification")(
-        h2("Game Over"),
-        p(
-        "The winner is ",
-        b(winner),
-        " with a balance of ",
-        span(cls := "balance")(s"$balance CHF"),
-        "."
-        )
-  )
+        )   
+    }   
 
     override def css: String = super.css + """
     html{
@@ -150,14 +149,6 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
         height:100%;
     }
 
-    .space-before-table{
-        height:10%;
-    }
-
-    .game-table{
-        position: relative;
-    }
-
     .all-table {
         position: absolute;  
         top: 50%;            
@@ -173,6 +164,8 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
     }
 
     .center-table{
+        position: absolute;
+        top:6%;
         display: grid;
         place-items: center;
         line-height:2;
@@ -210,8 +203,8 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
     }
 
     #player1{
-        top:10%;
-        left:15%;
+        top:30%;
+        left:10%;
     }
     #player2{
         top:5%;
@@ -222,8 +215,8 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
         left:45%;
     }
     #player4{
-        top:45%;
-        left:10%	
+        top:60%;
+        left:5%	
     }
     #player5{
         top:50%;
@@ -233,7 +226,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
     .controls{
         position: absolute;
         bottom: 1%; 
-        left: 10%;   
+        left: 5%;   
         display: flex;
         flex-direction: row;
         align-items: flex-end;  
