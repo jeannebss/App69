@@ -295,11 +295,18 @@ class Logic extends StateMachine[Event, GameState, View]:
         ) = state
         
         val scoresView = ScoresView(playerBalance, poolValue)
+        def numberOfCard(turn: Int): Int =
+            turn match
+                case 0 => 0
+                case 1 => 3
+                case 2 => 4
+                case _ => 5
+                
         phase match
             case InGame(turn) =>
                 val cardView = InGameCards(
                     playerCards(userId), 
-                    dealerCards.take(if turn <= 3 then turn else 5).toVector
+                    dealerCards.take(numberOfCard(turn)).toVector
                 )
                 val phaseView = ChoiceSelection
                 View(phaseView, scoresView, cardView)
@@ -307,7 +314,7 @@ class Logic extends StateMachine[Event, GameState, View]:
             case PlayerChoice(turn, choice) =>
                 val cardView = InGameCards(
                     playerCards(userId), 
-                    dealerCards.take(if turn <= 3 then turn else 5).toVector
+                    dealerCards.take(numberOfCard(turn)).toVector
                 )
                 val phaseView = ChoiceMade(choice)
                 View(phaseView, scoresView, cardView)
