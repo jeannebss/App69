@@ -37,6 +37,7 @@ lazy val app = (crossProject(JVMPlatform, JSPlatform) in file("./apps"))
     Global / cancelable := true,
     libraryDependencies ++= Seq(
       "org.scala-lang" %% "toolkit-test" % "0.2.1" % Test,
+      "org.scalacheck" %% "scalacheck" % "1.15.4" % "test"
     )
   )
 
