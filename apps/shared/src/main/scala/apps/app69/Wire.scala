@@ -105,6 +105,8 @@ object Wire extends AppWire[Event, View]:
             phaseView match
                 case ChoiceSelection =>
                     Obj("tag" -> "ChoiceSelection")
+                case NotPlaying =>
+                    Obj("tag" -> "NotPlaying")
                 case ChoiceMade(choice: Choice) => 
                     Obj(
                         "tag" -> "ChoiceMade",
@@ -117,6 +119,7 @@ object Wire extends AppWire[Event, View]:
             json("tag").str match
                 case "ChoiceSelection" =>
                     ChoiceSelection
+                case "NotPlaying" => NotPlaying
                 case "ChoiceMade" =>
                     val choice = ChoiceWire.decode(json("Choice")).get
                     ChoiceMade(choice)

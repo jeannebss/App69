@@ -305,7 +305,9 @@ class Logic extends StateMachine[Event, GameState, View]:
                     playerCards(userId), 
                     dealerCards.take(numberOfCard(turn)).toVector
                 )
-                val phaseView = ChoiceSelection
+                val phaseView = 
+                    if userId == currentPlayer then ChoiceSelection
+                    else NotPlaying
                 View(phaseView, scoresView, cardView)
             
             case PlayerChoice(turn, choice) =>
