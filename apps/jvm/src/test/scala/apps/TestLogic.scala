@@ -2,7 +2,8 @@ package apps
 package app69
 import cs214.webapp.*
 import cs214.webapp.Action
-import javax.smartcardio.Card
+import Card.*
+import Suit.*
 
 
 class TestLogic extends munit.FunSuite{
@@ -262,11 +263,19 @@ class TestLogic extends munit.FunSuite{
 
 
     test("Card Test: dealer cards and players hand stay the same through turns"):
-        val allCards = List(Card(14, Heart), Card(2, Spade), Card(3, Diamond), Card(12, Club), Card(13, Heart), Card(4, Spade), Card(5, Diamond), Card(10, Club), Card(11, Club), Card(10, Diamond), Card(11, Spade), Card(7, Diamond), Card(8, Spade), Card(14, Club), Card(14, Spade))
+        def updateGameState(player: String, choice: Choice): GameState = {
+            val action = logique.transition(gameState)(player, Event.PlayerAction(choice)).get(2)
+            action match {
+            case Action.Render(st) => st
+            case _ => throw new IllegalStateException("Unexpected action type")
+            }
+        }
+
+        val allCards = List(Card(14, Suit.Heart), Card(2, Suit.Spade), Card(3, Suit.Diamond), Card(12, Suit.Club), Card(13, Suit.Heart), Card(4, Suit.Spade), Card(5, Suit.Diamond), Card(10, Suit.Club), Card(11, Suit.Club), Card(10, Suit.Diamond), Card(11, Suit.Spade), Card(7, Suit.Diamond), Card(8, Suit.Spade), Card(14, Suit.Club), Card(14, Suit.Spade))
         val dCards = allCards.take(5)
         val remainingCard = allCards.drop(5)
-        val pCards = (0 until players.size).map(n => (players(n), Hand(remainingCard(n * 2), remainingCard(n*2+1)))).toMap
         val joueurs = List("Alexis", "Jeanne", "Antoine", "Jakub", "Guillaume")
+        val pCards = (0 until joueurs.size).map(n => (joueurs(n), Hand(remainingCard(n * 2), remainingCard(n*2+1)))).toMap
         val money = Map(("Alexis" -> 1000), ("Jeanne" -> 1000), ("Antoine" -> 1000), ("Jakub" -> 1000), ("Guillaume" -> 1000))
         gameState = GameState(joueurs,
                             money,
@@ -279,42 +288,17 @@ class TestLogic extends munit.FunSuite{
                             joueurs.head,
                             joueurs.head,
                             joueurs.map(_ -> 0).toMap)
-        val action = logique.transition(gameState)("Alexis", Event.PlayerAction(Choice.Raise(1000))).get(2)
-        action match {
-                case Action.Render(st) => gameState = st
-                case _ => throw new IllegalStateException("Unexpected action type")
-            }
-        val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = gameState
-        assertEquals(dealerCards, dCards)
-        assertEquals(pCards, dCards)
-
-        val action = logique.transition(gameState)("Jeanne", Event.PlayerAction(Choice.Call)).get(2)
-        action match {
-                case Action.Render(st) => gameState = st
-                case _ => throw new IllegalStateException("Unexpected action type")
-            }
         
-        val action = logique.transition(gameState)("Antoine", Event.PlayerAction(Choice.Call)).get(2)
-        action match {
-                case Action.Render(st) => gameState = st
-                case _ => throw new IllegalStateException("Unexpected action type")
-            }
-        val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = gameState
-        assertEquals(dealerCards, dCards)
-        assertEquals(pCards, dCards)
+        gameState = updateGameState("Alexis", Choice.Raise(1000))
 
-        val action = logique.transition(gameState)("Jakub", Event.PlayerAction(Choice.Fold)).get(2)
-        action match {
-                case Action.Render(st) => gameState = st
-                case _ => throw new IllegalStateException("Unexpected action type")
-            }
+        gameState = updateGameState("Jeanne", Choice.Call)
 
-        val action = logique.transition(gameState)("Guillaume", Event.PlayerAction(Choice.Call)).get(2)
-        action match {
-                case Action.Render(st) => gameState = st
-                case _ => throw new IllegalStateException("Unexpected action type")
-            }
-        val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = gameState
+        gameState = updateGameState("Antoine", Choice.Call)
+
+        gameState = updateGameState("Jakub", Choice.Fold)
+
+        gameState = updateGameState("Guillaume", Choice.Fold)
+
         assertEquals(players, List("Jeanne", "Antoine", "Jakub", "Guillaume"))
         assertEquals(playerBalance, Map(("Jeanne" -> 1500), ("Antoine" -> 1500), ("Jakub" -> 1000), ("Guillaume" -> 1000)))
         assertEquals(poolValue, 0)
