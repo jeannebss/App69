@@ -9,20 +9,19 @@ type Value = Int
 type Bet = Int
 
 type Balance = Int
-
 object Suit:
     val Spade = "♠️"
     val Heart = "♥️"
     val Diamond = "♦"
     val Club = "♣️"
     val AllSuits = Set(Heart, Club, Spade, Diamond)
+    
     def order(suit: Suit): Int =
         suit match
-            case "♠️" => 0
-            case "♥️" => 1
-            case "♦" => 2
-            case "♣️" => 3
-
+            case Spade   => 0
+            case Heart   => 1
+            case Diamond => 2
+            case Club    => 3
 
 object Value:
     val AllValues: Set[Value] = (2 to 14).toSet
@@ -54,8 +53,6 @@ object CardSymbols:
             case _ => card.value - 1
         val unicode = (base + suitDecalage + cardValueOffset)
         new String(Character.toChars(unicode))
-
-
 
 object AllCards:
     def apply: Set[Card] =
