@@ -39,7 +39,7 @@ class Logic extends StateMachine[Event, GameState, View]:
     import apps.CardView.*
 
     override def init(clients: Seq[UserId]): GameState =
-        val allCards = RANDOM.shuffle(AllCards.apply).toList
+        val allCards = RANDOM.shuffle(AllCards.apply)
         val dealerCards = allCards.take(5)
         val remainingCard = allCards.drop(5)
         val players = clients.toList
@@ -256,9 +256,8 @@ class Logic extends StateMachine[Event, GameState, View]:
                     // penser au fait que les joueurs qui ont perdus ne servent a rien dans le restart
 
                     val newAllCards = RANDOM.shuffle(AllCards.apply) // nouveau melange des cartes
-                    val newDealerCards = newAllCards.take(5).toList // nouvelles cartes du croupier, sur le model du init
-                    val newRemainingCard = newAllCards.drop(5).toList // utile pour éviter d'utiliser les cartes du croupier
-                                        // la ligne au dessus est mauvaise, il faut prendre les cartes dans le bon ordre, sauf si on s'en fout
+                    val newDealerCards = newAllCards.take(5) // nouvelles cartes du croupier, sur le model du init
+                    val newRemainingCard = newAllCards.drop(5) // utile pour éviter d'utiliser les cartes du croupier
                     val newPlayerCards = (0 until players.size).map(n => (players(n), Hand(newRemainingCard(n * 2), newRemainingCard(n*2+1)))).toMap
                     val newGameState = state.copy(  activePlayer = newActivePlayer, 
                                                     highestBetter = smallBlind, 

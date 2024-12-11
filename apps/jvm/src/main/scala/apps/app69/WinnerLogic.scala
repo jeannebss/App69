@@ -34,7 +34,7 @@ object WinnerLogic:
         groupCard.filter(_._2.size == num).keys.maxOption
 
     def handValue(hand: Hand, dealer: List[Card]): HandValue = 
-            val set = dealer.toSet + hand._1 + hand._2
+            val set = dealer.toSet + hand._1 + hand._2 ++ (if hand.first.value == 14 then Set(Card(1, hand.first.suit)) else Set.empty) ++ (if hand.second.value == 14 then Set(Card(1, hand.second.suit)) else Set.empty)
             if flush(set).isDefined then
                 (if straight(set.filter(_.suit == flush(set).get.suit)).isDefined then return HandValue.StraightFlush(straight(set.filter(_.suit == flush(set).get.suit)).get))
                 
