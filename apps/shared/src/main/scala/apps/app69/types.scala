@@ -92,6 +92,7 @@ case class View(
 
 enum PhaseView:
     case ChoiceSelection
+    case NotPlaying
     case ChoiceMade(choice: Choice)
     case Winner
 

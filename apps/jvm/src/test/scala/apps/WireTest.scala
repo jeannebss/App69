@@ -65,6 +65,7 @@ class WireTest extends munit.FunSuite:
     test("PhaseView wire encode and decode correctly"):
         val phaseView = Seq(
             ChoiceSelection,
+            NotPlaying,
             ChoiceMade(Raise(20)),
             Winner
         )
@@ -160,7 +161,7 @@ object WireSpecifications extends Properties("Wire"):
         yield ChoiceMade(c)
 
     val phaseView: Gen[PhaseView] =
-        oneOf(const(ChoiceSelection), choiceMade, const(Winner))
+        oneOf(const(ChoiceSelection), const(NotPlaying), choiceMade, const(Winner))
 
     val userId: Gen[UserId] = Arbitrary.arbitrary[String]
     val balance: Gen[Balance] = Arbitrary.arbitrary[Int]
