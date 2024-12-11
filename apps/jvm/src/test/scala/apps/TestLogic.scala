@@ -2,6 +2,7 @@ package apps
 package app69
 import cs214.webapp.*
 import cs214.webapp.Action
+import javax.smartcardio.Card
 
 
 class TestLogic extends munit.FunSuite{
@@ -258,6 +259,77 @@ class TestLogic extends munit.FunSuite{
         catch
             case IllegalMoveException("not your turn")=> true
             case _ => throw new IllegalMoveException("not your turn")
+
+
+    test("Card Test: dealer cards and players hand stay the same through turns"):
+        val allCards = List(Card(14, Heart), Card(2, Spade), Card(3, Diamond), Card(12, Club), Card(13, Heart), Card(4, Spade), Card(5, Diamond), Card(10, Club), Card(11, Club), Card(10, Diamond), Card(11, Spade), Card(7, Diamond), Card(8, Spade), Card(14, Club), Card(14, Spade))
+        val dCards = allCards.take(5)
+        val remainingCard = allCards.drop(5)
+        val pCards = (0 until players.size).map(n => (players(n), Hand(remainingCard(n * 2), remainingCard(n*2+1)))).toMap
+        val joueurs = List("Alexis", "Jeanne", "Antoine", "Jakub", "Guillaume")
+        val money = Map(("Alexis" -> 1000), ("Jeanne" -> 1000), ("Antoine" -> 1000), ("Jakub" -> 1000), ("Guillaume" -> 1000))
+        gameState = GameState(joueurs,
+                            money,
+                            0,
+                            joueurs.head,
+                            dCards,
+                            pCards,
+                            Phase.InGame(0),
+                            joueurs.map(_ -> true).toMap,
+                            joueurs.head,
+                            joueurs.head,
+                            joueurs.map(_ -> 0).toMap)
+        val action = logique.transition(gameState)("Alexis", Event.PlayerAction(Choice.Raise(1000))).get(2)
+        action match {
+                case Action.Render(st) => gameState = st
+                case _ => throw new IllegalStateException("Unexpected action type")
+            }
+        val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = gameState
+        assertEquals(dealerCards, dCards)
+        assertEquals(pCards, dCards)
+
+        val action = logique.transition(gameState)("Jeanne", Event.PlayerAction(Choice.Call)).get(2)
+        action match {
+                case Action.Render(st) => gameState = st
+                case _ => throw new IllegalStateException("Unexpected action type")
+            }
+        
+        val action = logique.transition(gameState)("Antoine", Event.PlayerAction(Choice.Call)).get(2)
+        action match {
+                case Action.Render(st) => gameState = st
+                case _ => throw new IllegalStateException("Unexpected action type")
+            }
+        val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = gameState
+        assertEquals(dealerCards, dCards)
+        assertEquals(pCards, dCards)
+
+        val action = logique.transition(gameState)("Jakub", Event.PlayerAction(Choice.Fold)).get(2)
+        action match {
+                case Action.Render(st) => gameState = st
+                case _ => throw new IllegalStateException("Unexpected action type")
+            }
+
+        val action = logique.transition(gameState)("Guillaume", Event.PlayerAction(Choice.Call)).get(2)
+        action match {
+                case Action.Render(st) => gameState = st
+                case _ => throw new IllegalStateException("Unexpected action type")
+            }
+        val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = gameState
+        assertEquals(players, List("Jeanne", "Antoine", "Jakub", "Guillaume"))
+        assertEquals(playerBalance, Map(("Jeanne" -> 1500), ("Antoine" -> 1500), ("Jakub" -> 1000), ("Guillaume" -> 1000)))
+        assertEquals(poolValue, 0)
+        assertEquals(currentPlayer, "Jeanne")
+        assert(dealerCards != dCards)
+        assert(playerCards != pCards)
+        assertEquals(activePlayer,  Map(("Jeanne" -> true), ("Antoine" -> true), ("Jakub" -> true), ("Guillaume" -> true)))
+        assertEquals(smallBlind, "Jeanne")
+        assertEquals(highestBetter, "Jeanne")
+        assertEquals(turnBets, Map(("Jeanne" -> 0), ("Antoine" -> 0), ("Jakub" -> 0), ("Guillaume" -> 0)))
+        
+
+
+        
+        
 
 
 
