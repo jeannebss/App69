@@ -55,11 +55,11 @@ object CardSymbols:
         new String(Character.toChars(unicode))
 
 object AllCards:
-    def apply: Set[Card] =
-        for
+    def apply: List[Card] =
+        (for
             value <- Value.AllValues
             suit <- Suit.AllSuits
-        yield Card(value, suit)
+        yield Card(value, suit)).toList
 
 case class Hand(first: Card, second: Card)
 
