@@ -25,7 +25,9 @@ class Logic extends StateMachine[Event, GameState, View]:
 
     override val wire = Wire
 
-    private val END_ROUND_PAUSE_MS = 5000
+    private val END_ROUND_PAUSE_MS = 2000
+
+    private val RANDOM = new Random()
 
     private val STARTING_BALANCE = 1000
 
@@ -37,7 +39,7 @@ class Logic extends StateMachine[Event, GameState, View]:
     import apps.CardView.*
 
     override def init(clients: Seq[UserId]): GameState =
-        val allCards = Random.shuffle(AllCards.apply).toList
+        val allCards = RANDOM.shuffle(AllCards.apply).toList
         val dealerCards = allCards.take(5)
         val remainingCard = allCards.drop(5)
         val players = clients.toList
@@ -104,8 +106,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                         //Si reveal calcul du gagnant et update avant de switch to reveal
                         if nextPhase == Reveal then
-                            val playerInCard = playerCards.filter((id, v) => activePlayer(id))
-                            val winner = WinnerLogic.winner(playerInCard, dealerCards, activePlayer) // détermine les Id du/des gagnants
+                            val winner = WinnerLogic.winner(playerCards, dealerCards, activePlayer) // détermine les Id du/des gagnants
                             val updatedPlayerBalance = playerBalance.map( (id, amount) =>
                                 val newAmount = if winner.contains(id) then amount + nextPoolValue/winner.size else amount
                                 (id, newAmount))
@@ -116,13 +117,12 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextActivePlayer = nextPlayers.map( _ -> false).toMap
 
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
-                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, players.indexOf(smallBlind))
+                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind)+1)%players.size)
 
                             
-                            val showingPhase = CardReveal
-                            val showCardPhase = state.copy(phase = showingPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
+                            val showCardPhase = state.copy(phase = CardReveal, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer)
 
-                            val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
+                            val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = nextPlayers.map(_ -> 0).toMap)
                             
                             Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
                         else
@@ -155,8 +155,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                         //Si reveal calcul du gagnant et update avant de switch to reveal
                         if nextPhase == Reveal then
-                            val playerInCard = playerCards.filter((id, v) => activePlayer(id))
-                            val winner = WinnerLogic.winner(playerInCard, dealerCards, activePlayer) // détermine les Id du/des gagnants
+                            val winner = WinnerLogic.winner(playerCards, dealerCards, activePlayer) // détermine les Id du/des gagnants
                             val updatedPlayerBalance = playerBalance.map( (id, amount) =>
                                 val newAmount = if winner.contains(id) then amount + nextPoolValue/winner.size else amount
                                 (id, newAmount))
@@ -164,16 +163,14 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val nextPlayers = players.filter(id => updatedPlayerBalance(id) > 0)
 
-                            val nextActivePlayer = nextPlayers.map( _ -> false).toMap
-
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
-                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, players.indexOf(smallBlind))
+                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind) + 1)%players.size)
 
+                            val nextActivePlayer = nextPlayers.map( _ -> false).toMap
                             
-                            val showingPhase = CardReveal
-                            val showCardPhase = state.copy(phase = showingPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
+                            val showCardPhase = state.copy(phase = CardReveal, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer)
 
-                            val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
+                            val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = nextPlayers.map(_ -> 0).toMap)
                             
                             Seq(Action.Render(showCardPhase), Action.Pause(5000), Action.Render(nextState))
                         else
@@ -211,15 +208,15 @@ class Logic extends StateMachine[Event, GameState, View]:
                             )
 
                             val nextPlayers = players.filter(id => updatedPlayerBalance(id) > 0)
+
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
                             val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind) + 1)%players.size)
 
                             val updateActivePlayer = nextPlayers.map( _ -> false).toMap
                             
-                            val showingPhase = CardReveal
-                            val showCardPhase = state.copy(phase = showingPhase, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers)
+                            val showCardPhase = state.copy(phase = CardReveal, playerBalance = updatedPlayerBalance, activePlayer = updateActivePlayer)
 
-                            val nextState = state.copy(phase = nextPhase, playerBalance = updatedPlayerBalance, activePlayer = updateActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = players.map(_ -> 0).toMap)
+                            val nextState = state.copy(phase = Reveal, playerBalance = updatedPlayerBalance, activePlayer = updateActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = nextPlayers.map(_ -> 0).toMap)
                             Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
                         else
                             val viewingPhase = PlayerChoice(turn, choice)
@@ -258,7 +255,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 if newActivePlayer.forall((k,v) => v) then//ready means a player is ready to start a new round
                     // penser au fait que les joueurs qui ont perdus ne servent a rien dans le restart
 
-                    val newAllCards = Random.shuffle(AllCards.apply) // nouveau melange des cartes
+                    val newAllCards = RANDOM.shuffle(AllCards.apply) // nouveau melange des cartes
                     val newDealerCards = newAllCards.take(5).toList // nouvelles cartes du croupier, sur le model du init
                     val newRemainingCard = newAllCards.drop(5).toList // utile pour éviter d'utiliser les cartes du croupier
                                         // la ligne au dessus est mauvaise, il faut prendre les cartes dans le bon ordre, sauf si on s'en fout
