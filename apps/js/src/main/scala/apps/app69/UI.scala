@@ -37,6 +37,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
             ),
         phaseView match
             case ChoiceSelection => InGameCardsUIrender(true, false, userId, scoresView, cardView)
+            case NotPlaying => InGameCardsUIrender(false, false, userId, scoresView, cardView)
             case ChoiceMade(choice) => InGameCardsUIrender(false, false, userId, scoresView, cardView)
             case Winner => InGameCardsUIrender(false, true, userId, scoresView, cardView)
         )
@@ -61,6 +62,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
         
         frag(
                 body(
+                    h1(id :="name-of-page")("6poker9"),
                     div(cls := "game-container")(
                         div(cls := "game-table")(
                         div(cls := "all-table")(
@@ -77,12 +79,12 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                         div(cls := "player", id := "player1")(
                             div(cls := "player-name")(playersInGame(0)),
                             div(cls := "cards")(if playersInGame(0)=="" then "" else if (endOfTurn) then playerCards(playersInGame(0)) else"🂠🂠"),
-                            div(cls := "balance")("Balance :", if playersInGame(0)=="" then "" else playersScores(playersInGame(0)))
+                            div(cls := "balance")(if playersInGame(0)=="" then "" else "Balance :" + playersScores(playersInGame(0)))
                         ),
                         div(cls := "player", id := "player2")(
                             div(cls := "player-name")(playersInGame(1)),
                             div(cls := "cards")(if playersInGame(1)=="" then "" else if (endOfTurn) then playerCards(playersInGame(1)) else"🂠🂠"),
-                            div(cls := "balance")("Balance :", if playersInGame(1)=="" then "" else playersScores(playersInGame(1)))
+                            div(cls := "balance")(if playersInGame(1)=="" then "" else "Balance :" + playersScores(playersInGame(1)))
                         ),
                         div(cls := "player", id := "player3")(
                             div(cls := "player-name")(userId),
@@ -92,12 +94,12 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                         div(cls := "player", id := "player4")(
                             div(cls := "player-name")(playersInGame(2)),
                             div(cls := "cards")(if playersInGame(2)=="" then "" else if (endOfTurn) then playerCards(playersInGame(2)) else"🂠🂠"),
-                            div(cls := "balance")("Balance :", if playersInGame(2)=="" then "" else playersScores(playersInGame(2)))
+                            div(cls := "balance")(if playersInGame(2)=="" then "" else "Balance :" + playersScores(playersInGame(2)))
                         ),
                         div(cls := "player", id := "player5")(
                             div(cls := "player-name")(playersInGame(3)),
                             div(cls := "cards")(if playersInGame(3)=="" then "" else if (endOfTurn) then playerCards(playersInGame(3)) else"🂠🂠"),
-                            div(cls := "balance")("Balance :", if playersInGame(3)=="" then "" else playersScores(playersInGame(3)))
+                            div(cls := "balance")(if playersInGame(3)=="" then "" else "Balance :" + playersScores(playersInGame(3)))
                         )
                     ),
                     if (endOfTurn) then {
@@ -149,12 +151,19 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
         line-height: 1.2; 
     }
 
+    #name-of-page{
+        position : absolute;
+        font-size: 3em;
+        top : 0%;
+        left : 42%;
+    }
+
     body{
         background-color: #e1e1e1;
         margin:1em;
         height:100%;
     }
-
+    
     .all-table {
         position: absolute;  
         top: 50%;            
@@ -184,7 +193,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
     .deck{
         display:flex;
         flex-direction:column;
-        font-size:4.5em;
+        font-size:5.5em;
         line-height:120%;
     }
 
@@ -195,7 +204,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
     }
 
     .cards{
-        font-size:3em;
+        font-size:5em;
         margin-bottom: 5%;
     }
 
@@ -217,7 +226,7 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
         left:75%;
     }
     #player3{
-        top:85%;
+        top:80%;
         left:45%;
     }
     #player4{
@@ -256,6 +265,11 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
     #raise{
         background-color: #4ba652;
         cursor: default;
+    }
+    #bet{
+        padding : 0px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
     }
     #check{
         background-color: #8e8e8e;
