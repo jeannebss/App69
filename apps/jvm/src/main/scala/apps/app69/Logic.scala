@@ -307,7 +307,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 val phaseView = 
                     if userId == currentPlayer then ChoiceSelection
                     else NotPlaying
-                View(phaseView, scoresView, cardView)
+                View(phaseView, scoresView, cardView, activePlayer)
             
             case PlayerChoice(turn, choice) =>
                 val cardView = InGameCards(
@@ -315,7 +315,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                     dealerCards.take(numberOfCard(turn)).toVector
                 )
                 val phaseView = ChoiceMade(choice)
-                View(phaseView, scoresView, cardView)
+                View(phaseView, scoresView, cardView, activePlayer)
 
             case CardReveal | Reveal =>
                 val cardView = RevealCards(
@@ -323,7 +323,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                     dealerCards.toVector
                 )
                 val phaseView = Winner
-                View(phaseView, scoresView, cardView)
+                View(phaseView, scoresView, cardView, activePlayer)
 
             case EndGame => 
                 throw new IllegalMoveException("Not implemented yey!")

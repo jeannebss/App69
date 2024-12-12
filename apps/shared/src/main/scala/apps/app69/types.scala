@@ -54,6 +54,8 @@ object CardSymbols:
         val unicode = (base + suitDecalage + cardValueOffset)
         new String(Character.toChars(unicode))
 
+    val back: String = "🂠"
+
 object AllCards:
     def apply: List[Card] =
         (for
