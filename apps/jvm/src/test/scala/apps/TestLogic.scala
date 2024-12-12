@@ -311,6 +311,65 @@ class TestLogic extends munit.FunSuite{
         assertEquals(smallBlind, "Jeanne")
         assertEquals(highestBetter, "Jeanne")
         assertEquals(turnBets, Map(("Jeanne" -> 0), ("Antoine" -> 0), ("Jakub" -> 0), ("Guillaume" -> 0)))
+
+
+    test("Game Start Test: Game shouldn't start with only one player"): // not sure about that one
+        
+        try{logique.init(Seq("Jakub"))}
+        catch
+            case IllegalMoveException("You cannot play alone")=> true
+            case _ => throw new IllegalMoveException("You cannot play alone")
+
+
+    test("Card Test: everyone folds and cards are randomly shuffuled between rounds"):
+        def updateGameState(player: String, choice: Choice): GameState = 
+            val action = logique.transition(gameState)(player, Event.PlayerAction(choice)).get(2)
+            action match 
+                case Action.Render(st) => st
+                case _ => throw new IllegalStateException("Unexpected action type")
+        
+        gameState = logique.init(Seq("Guillaume", "Jeanne", "Jakub", "Alexis", "Antoine"))
+
+        println("creation")
+
+        val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = gameState
+
+        val dCards = dealerCards
+        val pCards = playerCards
+
+        var gameState1 = gameState
+
+        gameState1 = updateGameState("Guillaume", Choice.Fold)
+
+        gameState = gameState1
+
+        gameState1 = updateGameState("Jeanne", Choice.Fold)
+
+        gameState = gameState1
+
+        gameState1 = updateGameState("Jakub", Choice.Fold)
+
+        gameState = gameState1
+
+        gameState1 = updateGameState("Alexis", Choice.Fold)
+
+        gameState = gameState1
+
+        gameState1 = updateGameState("Antoine", Choice.Fold)
+
+        gameState = gameState1
+
+        val GameState(players1, playerBalance1, poolValue1, currentPlayer1, dealerCards1, playerCards1, phase1, activePlayer1, smallBlind1, highestBetter1, turnBets1) = gameState1
+
+        assert(!dealerCards1.equals(dealerCards))
+        assert(!playerCards1.equals(playerCards))
+
+        
+
+
+
+
+        
         
 
 
