@@ -1,4 +1,4 @@
-package apps
+/*package apps
 package app69
 
 import apps.*
@@ -281,4 +281,4 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
         background-color:#f4625c;
     }
     """
-    
+    */

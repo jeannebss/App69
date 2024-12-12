@@ -17,6 +17,8 @@ import CardSymbols.back
 import PlayersView.*
 import PlayersView.*
 import Event.* 
+import org.scalajs.dom
+
 
 @JSExportTopLevel("app69_html")
 object HtmlUI extends WSClientApp:
@@ -47,11 +49,11 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
     def renderView(userId: UserId, view: View): Frag =
         frag(
-            renderPhase(userId, view.PhaseView),
+            renderPhase(userId, view.phaseView),
             div(cls := "all-table")(
-                renderTable(userId, view.TableView)
-            )
-            renderPlayers(userId, view.PlayersView)
+                renderTable(userId, view.tableView)
+            ),
+            renderPlayers(userId, view.playersView)
         )
 
     def renderPhase(userId: UserId, phaseView: PhaseView): Frag = 
@@ -86,61 +88,84 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
             case MadeChoice(choice) => frag()
 
-            case Winner(players) => frag()
-            
-            case End(players,score) =>
+            case Winner(players) => frag(
+                div(id := "winner")(
+                    "Winner: ", players.mkString(", ")
+                )
+            )
+            case IsReady => frag(
+                            div(cls := "controls")(
+                                button(id := "continue", onclick:={ () => sendEvent(Event.Ready)})("Click if you're ready")
+                            )
+                        )
+            case End(players,balance) => frag(
+                div(id := "end")(
+                    "Winner: ", players.mkString(", "),
+                    "Balance: ", balance
+                )
+            )
 
     def renderPlayers(userId: UserId, playersView: PlayersView): Frag = 
         playersView match
-            case InGame(playerAttributes, hand) => frag(
-                
-            )
-            case Reveal(playerAttributes) =>
-        
-    def renderUserId(balance: Balance, hand: Hand, stillInGame: Boolean): Frag = frag(
+            case PlayersView.InGame(playerAttributes, hand) =>
+                val (id, balance, stillInGame, isCurrentPlayer) = playerAttributes(userId)
+                frag(
+                    renderUserId(userId, balance, hand, stillInGame),
+                    for user <- playerAttributes.keys.filter(_!=userId) do
+                        val (id, balance, stillInGame, isCurrentPlayer) = playerAttributes(user)
+                        renderOpponent(user, id, balance, stillInGame, isCurrentPlayer, Hand(Card(1,"♥️"),Card(1,"♥️")))
+                )
+            case PlayersView.Reveal(playerAttributes) => 
+                val (id, balance, stillInGame, hand) = playerAttributes(userId)
+                frag(
+                    renderUserId(userId, balance, hand, stillInGame),
+                    for user <- playerAttributes.keys.filter(_!=userId) do
+                        val (id, balance, stillInGame, hand) = playerAttributes(user)
+                        renderOpponent(user, id, balance, stillInGame, false, hand)
+                )
 
-    )
+    def renderUserId(userId : UserId, balance: Balance, hand: Hand, stillInGame: Boolean): Frag = 
+        frag(
+            div(cls := "player", id := "currentPlayer")(
+                div(cls := "player-name")(userId),
+                renderHand(hand, true, stillInGame),
+                div(cls := "balance")(s"Balance : $balance CHF")
+            )               
+        )
 
-    def renderOponent(id: Int, balance: Balance, stillInGame: Boolean, activePlayer: Boolean): Frag = frag (
-
-    )
+    def renderOpponent(opponent : UserId, idOfPlayer: Int, balance: Balance, stillInGame: Boolean, isCurrentPlayer: Boolean, hand: Hand): Frag =
+        val nameOfPlayer = if isCurrentPlayer then (opponent +"💰") else opponent
+        frag(
+            div(cls := "player", id := s"player$idOfPlayer")(
+                div(cls := "player-name")(nameOfPlayer),
+                renderHand(hand, false, stillInGame),
+                div(cls := "balance")(s"Balance : $balance CHF")
+            ) 
+        )
 
     def renderTable(userId: UserId, tableView: TableView): Frag =
         frag(
             div(cls := "center-table")(
-                div(cls := "deck")(
-                    span(cls := "turned-cards")("🂠" * (5 - tableView.dealerCards.size)),
-                    span(cls := "cards-on-table")(tableView.dealerCards.map(CardSymbols.apply).mkString),
-                ),
+                renderDealerCards(tableView.dealerCards),
                 div(cls := "amount-in-pool")("Amount in the pool: ", tableView.poolBalance," CHF")),
                 div(cls := "pot")(span(cls := "money")("💰"))
-        )        
-    
-    def renderCards(userId: UserId, cardView: CardView, players: Vector[UserId]): Frag = cardView match
-        case InGameCards(playerCards, dealerCards) => frag(
-            renderHand(playerCards, true),
-            for user <- players do
-                renderHand(_, false),
-            renderDealerCards(dealerCards)
         )
 
-        case RevealCards(playerCards, dealerCards) => frag(
-            for user <- playerCards.keys do
-                renderHand(playerCards(user), true),
-            renderDealerCards(dealerCards)
-        )
-
-    def renderHand(hand: Hand, front: Boolean): Frag =
-        if front then frag(
+    def renderHand(hand: Hand, front: Boolean, stillInGame: Boolean): Frag =
+        if front && stillInGame then frag(
             div(cls := "cards")(CardSymbols(hand.first) + CardSymbols(hand.second))
-        ) else frag(
-            div(cls := "cards")(CardSymbols.back * 2)
-        )
+        ) else if stillInGame  then 
+            frag(
+                div(cls := "cards")(CardSymbols.back * 2)
+            )
+        else frag()
     
     def renderDealerCards(dealerCards: Vector[Card]): Frag =
-        div(cls := "deck")(
+        frag(
+            div(cls := "deck")(
             span(cls := "cards-on-table")(CardSymbols.back * (5 - dealerCards.size)),
-            span(cls := "turned-cards")(dealerCards.map(CardSymbols.apply(_)).mkString + ()),
+            span(cls := "turned-cards")(dealerCards.map(CardSymbols.apply).mkString)
+            )
         )
 
     override def css: String = super.css + 

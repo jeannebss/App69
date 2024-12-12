@@ -63,7 +63,12 @@ object AllCards:
             suit <- Suit.AllSuits
         yield Card(value, suit)).toList
 
-case class Hand(first: Card, second: Card)
+case class Hand(first:Card, second:Card)
+/*
+enum Hands:
+    case EmptyHand
+    case Hand(first: Card, second: Card)
+*/
 
 case class GameState(
     players: List[UserId],
