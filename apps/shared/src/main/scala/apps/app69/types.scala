@@ -80,33 +80,35 @@ case class GameState(
 )
 
 enum Phase:
-    case InGame(turn: Int)
-    case PlayerChoice(turn: Int, choice: Choice)
+    case InGame
+    case PlayerChoice(choice: Choice)
     case CardReveal
     case Reveal
     case EndGame 
 
 case class View(
     phaseView: PhaseView,
-    scoresView: ScoresView,
-    cardView: CardView
+    playersView: PlayersView,
+    tableView: TableView
 )
 
 enum PhaseView:
-    case ChoiceSelection
+    case Selecting
     case NotPlaying
-    case ChoiceMade(choice: Choice)
-    case Winner
+    case MadeChoice(choice: Choice)
+    case Winner(winners: Vector[UserId])
+    case IsReady
+    case End(winners: Vector[UserId], balance: Balance)
 
-enum CardView:
-    case InGameCards(playerCards: Hand, dealerCards: Vector[Card])
-    case RevealCards(playerCards: Map[UserId, Hand], dealerCards: Vector[Card])
-
-case class ScoresView(
-    playerScores: Map[UserId, Balance],
+case class TableView(
+    dealerCards: Vector[Card],
     poolBalance: Balance
 )
-    
+
+enum PlayersView:
+    case InGame(playerAttributes: Map[UserId, (Int, Balance, Boolean, Boolean)], hand: Hand)
+    case Reveal(playerAttributes: Map[UserId, (Int, Balance, Boolean, Hand)])
+
 enum Event:
     case PlayerAction(choice: Choice)
     case EndGameChoice(choice: Boolean)
