@@ -262,14 +262,14 @@ class TestLogic extends munit.FunSuite{
             case _ => throw new IllegalMoveException("not your turn")
 
 
-    test("Card Test: dealer cards and players hand stay the same through turns"):
-        def updateGameState(player: String, choice: Choice): GameState = {
+    test("Card Test: dealer cards and players hand change at the end of a round"):
+
+        def updateGameState(player: String, choice: Choice): GameState = 
             val action = logique.transition(gameState)(player, Event.PlayerAction(choice)).get(2)
-            action match {
-            case Action.Render(st) => st
-            case _ => throw new IllegalStateException("Unexpected action type")
-            }
-        }
+            action match 
+                case Action.Render(st) => st
+                case _ => throw new IllegalStateException("Unexpected action type")
+        
 
         val allCards = List(Card(14, Suit.Heart), Card(2, Suit.Spade), Card(3, Suit.Diamond), Card(12, Suit.Club), Card(13, Suit.Heart), Card(4, Suit.Spade), Card(5, Suit.Diamond), Card(10, Suit.Club), Card(11, Suit.Club), Card(10, Suit.Diamond), Card(11, Suit.Spade), Card(7, Suit.Diamond), Card(8, Suit.Spade), Card(14, Suit.Club), Card(14, Suit.Spade))
         val dCards = allCards.take(5)
@@ -298,6 +298,8 @@ class TestLogic extends munit.FunSuite{
         gameState = updateGameState("Jakub", Choice.Fold)
 
         gameState = updateGameState("Guillaume", Choice.Fold)
+
+        val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = gameState
 
         assertEquals(players, List("Jeanne", "Antoine", "Jakub", "Guillaume"))
         assertEquals(playerBalance, Map(("Jeanne" -> 1500), ("Antoine" -> 1500), ("Jakub" -> 1000), ("Guillaume" -> 1000)))
