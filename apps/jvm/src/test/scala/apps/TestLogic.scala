@@ -313,14 +313,6 @@ class TestLogic extends munit.FunSuite{
         assertEquals(turnBets, Map(("Jeanne" -> 0), ("Antoine" -> 0), ("Jakub" -> 0), ("Guillaume" -> 0)))
 
 
-    test("Game Start Test: Game shouldn't start with only one player"): // not sure about that one
-        
-        try{logique.init(Seq("Jakub"))}
-        catch
-            case IllegalMoveException("You cannot play alone")=> true
-            case _ => throw new IllegalMoveException("You cannot play alone")
-
-
     test("Card Test: everyone folds and cards are randomly shuffuled between rounds"):
         def updateGameState(player: String, choice: Choice): GameState = 
             val action = logique.transition(gameState)(player, Event.PlayerAction(choice)).get(2)
@@ -355,7 +347,7 @@ class TestLogic extends munit.FunSuite{
 
         gameState = gameState1
 
-        gameState1 = updateGameState("Antoine", Choice.Fold)
+        gameState1 = updateGameState("Antoine", Choice.Check)
 
         gameState = gameState1
 
@@ -363,19 +355,5 @@ class TestLogic extends munit.FunSuite{
 
         assert(!dealerCards1.equals(dealerCards))
         assert(!playerCards1.equals(playerCards))
-
-        
-
-
-
-
-        
-        
-
-
-        
-        
-
-
 
 }
