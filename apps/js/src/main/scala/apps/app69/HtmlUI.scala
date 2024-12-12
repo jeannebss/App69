@@ -13,8 +13,10 @@ import cs214.webapp.client.graphics.WebClientAppInstance
 import Phase.*
 import PhaseView.* 
 import Choice.*
-import CardView.*
 import CardSymbols.back
+import PlayersView.*
+import PlayersView.*
+import Event.* 
 
 @JSExportTopLevel("app69_html")
 object HtmlUI extends WSClientApp:
@@ -74,9 +76,9 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                         ),
                         " CHF"
                         ),
-                    button(id := "check", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Check))})("Check"),
-                    button(id := "call", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Call))})("Call"),
-                    button(id := "fold",onclick:={ () => sendEvent(Event.PlayerAction(Choice.Fold))})("Fold")
+                    button(id := "check", onclick:={ () => sendEvent(PlayerAction(Check))})("Check"),
+                    button(id := "call", onclick:={ () => sendEvent(PlayerAction(Call))})("Call"),
+                    button(id := "fold",onclick:={ () => sendEvent(PlayerAction(Fold))})("Fold")
                     ) 
                 )
 
@@ -90,9 +92,19 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
     def renderPlayers(userId: UserId, playersView: PlayersView): Frag = 
         playersView match
-            case InGame(balanceMap, hand) =>
-            case Reveal(playersMap) =>
+            case InGame(playerAttributes, hand) => frag(
+                
+            )
+            case Reveal(playerAttributes) =>
         
+    def renderUserId(balance: Balance, hand: Hand, stillInGame: Boolean): Frag = frag(
+
+    )
+
+    def renderOponent(id: Int, balance: Balance, stillInGame: Boolean, activePlayer: Boolean): Frag = frag (
+
+    )
+
     def renderTable(userId: UserId, tableView: TableView): Frag =
         frag(
             div(cls := "center-table")(
@@ -102,25 +114,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 ),
                 div(cls := "amount-in-pool")("Amount in the pool: ", tableView.poolBalance," CHF")),
                 div(cls := "pot")(span(cls := "money")("💰"))
-        )
-    def renderPlayers(userId: UserId, playerId: Int, balance: Balance, hand: Hand, active: Boolean): Frag = 
-        frag(
-        if active then 
-            div(cls := "player", id := s"player${playerId}")(
-                div(cls := "player-name")(userId),
-                render
-            )
-    )
-
-    def renderScores(userId: UserId, scoresView: ScoresView, players: Vector[UserId]): Frag = 
-        val ScoresView(playerScores, poolBalance) = scoresView
-        frag(
-            div(cls := "player", id := "player0")(
-                
-                div(cls := "balance")("Balance :" )
-            )
-    )
-
+        )        
     
     def renderCards(userId: UserId, cardView: CardView, players: Vector[UserId]): Frag = cardView match
         case InGameCards(playerCards, dealerCards) => frag(
