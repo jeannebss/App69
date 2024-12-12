@@ -39,26 +39,72 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     rel := "stylesheet"
                 )
             ),
+            h1(id :="name-of-page")("6poker9"),
             renderView(userId, view)
         )
 
     def renderView(userId: UserId, view: View): Frag =
         frag(
-            renderPhase(userId, view.phaseView),
-            renderScores(userId, view.scoresView, view),
-            renderCards(userId, view.cardView, view.playerNames)
+            renderPhase(userId, view.PhaseView),
+            div(cls := "all-table")(
+                renderTable(userId, view.TableView)
+            )
+            renderPlayers(userId, view.PlayersView)
         )
 
-    def renderPhase(userId: UserId, phaseView: PhaseView): Frag = phaseView match
-        case ChoiceSelection =>
+    def renderPhase(userId: UserId, phaseView: PhaseView): Frag = 
+        phaseView match
+            case Selecting =>
+                frag(
+                    div(cls := "controls")(
+                    button(id := "raise")(
+                        "Raise: ",
+                        input(
+                            `type` := "text",
+                            id := "bet",
+                            placeholder := "Enter bet",
+                            size := 6,
+                            onkeydown := { (event: dom.KeyboardEvent) =>
+                                if event.key == "Enter" then {
+                                    val inputElement = event.target.asInstanceOf[dom.html.Input]
+                                    val betValue = inputElement.value
+                                    sendEvent(Event.PlayerAction(Choice.Raise(betValue.toInt)))
+                                }
+                            }
+                        ),
+                        " CHF"
+                        ),
+                    button(id := "check", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Check))})("Check"),
+                    button(id := "call", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Call))})("Call"),
+                    button(id := "fold",onclick:={ () => sendEvent(Event.PlayerAction(Choice.Fold))})("Fold")
+                    ) 
+                )
 
-        case NotPlaying =>
+            case NotPlaying => frag()
 
-        case ChoiceMade(choice) =>
+            case MadeChoice(choice) => frag()
 
-        case Winner =>
+            case Winner(players) => frag()
+            
+            case End(players,score) =>
 
-    def renderPlayer(userId: UserId, playerId: Int, balance: Balance, hand: Hand, active: Boolean): Frag = frag(
+    def renderPlayers(userId: UserId, playersView: PlayersView): Frag = 
+        playersView match
+            case InGame(balanceMap, hand) =>
+            case Reveal(playersMap) =>
+        
+    def renderTable(userId: UserId, tableView: TableView): Frag =
+        frag(
+            div(cls := "center-table")(
+                div(cls := "deck")(
+                    span(cls := "turned-cards")("🂠" * (5 - tableView.dealerCards.size)),
+                    span(cls := "cards-on-table")(tableView.dealerCards.map(CardSymbols.apply).mkString),
+                ),
+                div(cls := "amount-in-pool")("Amount in the pool: ", tableView.poolBalance," CHF")),
+                div(cls := "pot")(span(cls := "money")("💰"))
+        )
+    def renderPlayers(userId: UserId, playerId: Int, balance: Balance, hand: Hand, active: Boolean): Frag = 
+        frag(
         if active then 
             div(cls := "player", id := s"player${playerId}")(
                 div(cls := "player-name")(userId),

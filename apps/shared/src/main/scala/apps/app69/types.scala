@@ -92,6 +92,7 @@ case class View(
     tableView: TableView
 )
 
+
 enum PhaseView:
     case Selecting
     case NotPlaying
