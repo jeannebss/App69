@@ -27,7 +27,7 @@ object Value:
     val AllValues: Set[Value] = (2 to 14).toSet
 
 case class Card(value: Value, suit: Suit):
-    require(value >= 2 && value <= 14)
+    require(value >= 1 && value <= 14)
     
     def completeName(): String =
         if value <= 10 then s"$value$suit"

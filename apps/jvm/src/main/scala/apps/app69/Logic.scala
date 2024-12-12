@@ -39,6 +39,8 @@ class Logic extends StateMachine[Event, GameState, View]:
     import apps.CardView.*
 
     override def init(clients: Seq[UserId]): GameState =
+        if clients.size < 2 then
+            throw new IllegalMoveException("Not enough players")
         val allCards = RANDOM.shuffle(AllCards.apply)
         val dealerCards = allCards.take(5)
         val remainingCard = allCards.drop(5)
@@ -127,8 +129,9 @@ class Logic extends StateMachine[Event, GameState, View]:
                             Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
                         else
                             val viewingPhase = PlayerChoice(turn, choice)
+                            val nextHighestBetter = if turnOver then selectNextPlayer(activePlayer, players.indexOf(smallBlind)) else highestBetter
                             val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
-                            val nextGamingState = state.copy(poolValue = nextPoolValue, currentPlayer = updateCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
+                            val nextGamingState = state.copy(poolValue = nextPoolValue, currentPlayer = updateCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
                             Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextGamingState))
 
                     case Call =>
@@ -176,11 +179,13 @@ class Logic extends StateMachine[Event, GameState, View]:
                         else
                             val viewingPhase = PlayerChoice(turn, choice)
                             val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet) 
-                            
-                            val nextState = state.copy(playerBalance = nextPlayerBalance, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
+                            val nextHighestBetter = if turnOver then selectNextPlayer(activePlayer, players.indexOf(smallBlind)) else highestBetter
+                            val nextState = state.copy(playerBalance = nextPlayerBalance, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
                             Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
 
                     case Fold =>
+                        if (turnBets(userId) - turnBets(highestBetter) == 0)
+                            then throw IllegalMoveException("You cannot fold cause no one has raised")
                         //Fold Action
                         val nextActivePlayer = activePlayer.updated(userId, false)
                         
@@ -198,7 +203,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                         val nextPhase = if turnOver then 
                             if turn == 3 || playerBalance.exists((id, v) => v == 0) || nextActivePlayer.count((id, v) => v) <= 1 then Reveal else InGame(turn + 1)
                             else InGame(turn)
-
+                        
                         //Si reveal calcul du gagnant et update avant de switch to reveal phase
                         if nextPhase == Reveal then
                             val winner = WinnerLogic.winner(playerCards, dealerCards, nextActivePlayer)
@@ -220,16 +225,16 @@ class Logic extends StateMachine[Event, GameState, View]:
                             Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
                         else
                             val viewingPhase = PlayerChoice(turn, choice)
-                            val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet, activePlayer = nextActivePlayer) 
-
-                            val nextState = state.copy(activePlayer = nextActivePlayer, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet)
+                            val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet, activePlayer = nextActivePlayer)
+                            val nextHighestBetter = if turnOver then selectNextPlayer(nextActivePlayer, players.indexOf(smallBlind)) else highestBetter
+                            val nextState = state.copy(activePlayer = nextActivePlayer, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
                             Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
 
                     case Raise(value) =>
                         //Players action link code, cannot turnOver if someone raise
                         val diff = highestBet + value - turnBets(currentPlayer)
-                        if (diff > playerBalance(userId) && value > maxRaise)
-                            then throw IllegalMoveException("You cannot raise more than your balance")
+                        if (diff > playerBalance(userId) || value > maxRaise || value <= 0)
+                            then throw IllegalMoveException("You cannot raise more than your balance or 0")
                         val nextPlayerBalance = playerBalance.updated(userId, playerBalance(userId) - diff)
                         val nextTurnBet = turnBets.updated(userId, highestBet + value)
                         val nextHighestBetter = userId
@@ -304,9 +309,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                     playerCards(userId), 
                     dealerCards.take(numberOfCard(turn)).toVector
                 )
-                val phaseView = 
-                    if userId == currentPlayer then ChoiceSelection
-                    else NotPlaying
+                val phaseView = ChoiceSelection
                 View(phaseView, scoresView, cardView)
             
             case PlayerChoice(turn, choice) =>
