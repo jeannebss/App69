@@ -297,14 +297,17 @@ class Logic extends StateMachine[Event, GameState, View]:
                 case 2 => 4
                 case _ => 5
         
-        val tableView = TableView(dealerCards.toVector, poolValue)
         phase match
             case InGame(turn) =>
                 val phaseView = 
                     if userId == currentPlayer then ChoiceSelection
                     else NotPlaying
+                val tableView = TableView(
+                    dealerCards.take(numberOfCard(turn)).toVector,
+                    poolValue
+                )
                 val playersView = InGamePlayer(
-                    players.filter(_ != userId).zipWithIndex.toMap, // needs change in logic
+                    players.filter(_ != userId).map(user => user -> players.indexOf(user)).toMap,
                     playerBalance,
                     activePlayer,
                     currentPlayer,
@@ -314,8 +317,12 @@ class Logic extends StateMachine[Event, GameState, View]:
             
             case PlayerChoice(turn, choice) =>
                 val phaseView = ChoiceMade(choice)
+                val tableView = TableView(
+                    dealerCards.take(numberOfCard(turn)).toVector,
+                    poolValue
+                )
                 val playersView = InGamePlayer(
-                    players.filter(_ != userId).zipWithIndex.toMap, // needs change in logic
+                    players.filter(_ != userId).map(user => user -> players.indexOf(user)).toMap,
                     playerBalance,
                     activePlayer,
                     currentPlayer,
@@ -326,8 +333,9 @@ class Logic extends StateMachine[Event, GameState, View]:
             case CardReveal | Reveal =>
                 val maxBalance = playerBalance.values.max
                 val phaseView = Winners(playerBalance.filter(_._2 == maxBalance).keys.toVector)
+                val tableView = TableView(dealerCards.toVector, poolValue)
                 val playerView = PlayerCardReveal(
-                    players.filter(_ != userId).zipWithIndex.toMap, // needs change in logic
+                    players.filter(_ != userId).map(user => user -> players.indexOf(user)).toMap,
                     playerBalance,
                     activePlayer,
                     playerCards

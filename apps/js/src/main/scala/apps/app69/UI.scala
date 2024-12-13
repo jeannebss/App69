@@ -19,17 +19,17 @@ import Event.*
 import org.scalajs.dom
 
 
-@JSExportTopLevel("app69_html")
-object HtmlUI extends WSClientApp:
+@JSExportTopLevel("app69")
+object UI extends WSClientApp:
     
     def appId: String = "app69"
     
     def uiId: UIId = "html"
 
     def init(userId: UserId, sendMessage: ujson.Value => Unit, target: Target): ClientAppInstance =
-        HtmlUIInstance(userId, sendMessage, target)
+        UIInstance(userId, sendMessage, target)
 
-class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Target)
+class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Target)
     extends WebClientAppInstance[Event, View](userId, sendMessage, target):
 
     override val wire = Wire
@@ -42,12 +42,12 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     rel := "stylesheet"
                 )
             ),
-            h1(id :="name-of-page")("6poker9"),
             renderView(userId, view)
         )
 
     def renderView(userId: UserId, view: View): Frag =
         frag(
+            h1(id :="name-of-page")("6poker9"),
             renderPhase(userId, view.phaseView),
             div(cls := "all-table")(
                 renderTable(userId, view.tableView)
@@ -63,7 +63,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     button(id := "raise")(
                         "Raise: ",
                         input(
-                            `type` := "number",
+                            `type` := "type",
                             id := "bet",
                             placeholder := "Enter bet",
                             size := 6,
@@ -135,7 +135,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
     def renderUserId(userId : UserId, balance: Balance, hand: Hand, stillInGame: Boolean): Frag = 
         frag(
-            div(cls := "player", id := "currentPlayer")(
+            div(cls := "player", id := "current-player")(
                 div(cls := "player-name")(userId),
                 renderHand(hand, true, stillInGame),
                 div(cls := "balance")(s"Balance : $balance CHF")
