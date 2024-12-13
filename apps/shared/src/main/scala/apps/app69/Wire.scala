@@ -5,8 +5,6 @@ import cs214.webapp.DecodingException
 import ujson.*
 
 import scala.util.{Failure, Success, Try}
-import scala.collection.mutable.LinkedHashMap
-import scala.collection.mutable
 import javax.swing.plaf.metal.MetalIconFactory.FolderIcon16
 
 object Wire extends AppWire[Event, View]:
