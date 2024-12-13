@@ -15,7 +15,6 @@ import PhaseView.*
 import Choice.*
 import CardSymbols.back
 import PlayersView.*
-import PlayersView.*
 import Event.* 
 import org.scalajs.dom
 

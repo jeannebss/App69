@@ -181,7 +181,7 @@ object Wire extends AppWire[Event, View]:
                 case "InGamePlayer" =>
                     val playerIndex = MapWire(StringWire, IntWire).decode(json("PlayerIndex")).get
                     val playerBalance = MapWire(StringWire, IntWire).decode(json("PlayerBalance")).get
-                    val activePlayers = MapWire(StringWire, BooleanWire).decode(json("ActivePlayer")).get
+                    val activePlayers = MapWire(StringWire, BooleanWire).decode(json("ActivePlayers")).get
                     val currentPlayer = StringWire.decode(json("CurrentPlayer")).get
                     val hand = HandWire.decode(json("Hand")).get
                     InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, hand)
@@ -189,7 +189,7 @@ object Wire extends AppWire[Event, View]:
                 case "PlayerCardReveal" =>
                     val playerIndex = MapWire(StringWire, IntWire).decode(json("PlayerIndex")).get
                     val playerBalance = MapWire(StringWire, IntWire).decode(json("PlayerBalance")).get
-                    val activePlayers = MapWire(StringWire, BooleanWire).decode(json("ActivePlayer")).get
+                    val activePlayers = MapWire(StringWire, BooleanWire).decode(json("ActivePlayers")).get
                     val playerHands = MapWire(StringWire, HandWire).decode(json("PlayerHands")).get
                     PlayerCardReveal(playerIndex, playerBalance, activePlayers, playerHands)
         
@@ -203,7 +203,7 @@ object Wire extends AppWire[Event, View]:
         
         override def decode(json: Value): Try[View] = Try:
             val phaseView = PhaseViewWire.decode(json("Phase")).get
-            val playersView = PlayersViewWire.decode(json("Scores")).get
-            val tableView = TableViewWire.decode(json("Cards")).get
+            val playersView = PlayersViewWire.decode(json("Players")).get
+            val tableView = TableViewWire.decode(json("Table")).get
             View(phaseView, playersView, tableView)
             
