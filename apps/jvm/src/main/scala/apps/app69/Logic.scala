@@ -31,12 +31,12 @@ class Logic extends StateMachine[Event, GameState, View]:
 
     private val STARTING_BALANCE = 1000
 
-    import apps.Phase.* 
-    import apps.Event.*
-    import apps.Choice.* 
-    import apps.PhaseView.*
-    import apps.Card.*
-    import apps.CardView.*
+    import app69.Phase.* 
+    import app69.Event.*
+    import app69.Choice.* 
+    import app69.PhaseView.*
+    import app69.Card.*
+    import app69.PlayersView.*
 
     override def init(clients: Seq[UserId]): GameState =
         val allCards = RANDOM.shuffle(AllCards.apply)
@@ -290,40 +290,49 @@ class Logic extends StateMachine[Event, GameState, View]:
             turnBets
         ) = state
         
-        val scoresView = ScoresView(playerBalance, poolValue)
         def numberOfCard(turn: Int): Int =
             turn match
                 case 0 => 0
                 case 1 => 3
                 case 2 => 4
                 case _ => 5
-                
+        
+        val tableView = TableView(dealerCards.toVector, poolValue)
         phase match
             case InGame(turn) =>
-                val cardView = InGameCards(
-                    playerCards(userId), 
-                    dealerCards.take(numberOfCard(turn)).toVector
-                )
                 val phaseView = 
                     if userId == currentPlayer then ChoiceSelection
                     else NotPlaying
-                View(phaseView, scoresView, cardView, activePlayer)
+                val playersView = InGamePlayer(
+                    players.zipWithIndex.toMap, // needs change in logic
+                    playerBalance,
+                    activePlayer,
+                    currentPlayer,
+                    playerCards(userId)
+                )
+                View(phaseView, playersView, tableView)
             
             case PlayerChoice(turn, choice) =>
-                val cardView = InGameCards(
-                    playerCards(userId), 
-                    dealerCards.take(numberOfCard(turn)).toVector
-                )
                 val phaseView = ChoiceMade(choice)
-                View(phaseView, scoresView, cardView, activePlayer)
+                val playersView = InGamePlayer(
+                    players.zipWithIndex.toMap, // needs change in logic
+                    playerBalance,
+                    activePlayer,
+                    currentPlayer,
+                    playerCards(userId)
+                )
+                View(phaseView, playersView, tableView)
 
             case CardReveal | Reveal =>
-                val cardView = RevealCards(
-                    playerCards,
-                    dealerCards.toVector
+                val maxBalance = playerBalance.values.max
+                val phaseView = Winners(playerBalance.filter(_._2 == maxBalance).keys.toVector)
+                val playerView = PlayerCardReveal(
+                    players.zipWithIndex.toMap, // needs change in logic
+                    playerBalance,
+                    activePlayer,
+                    playerCards
                 )
-                val phaseView = Winner
-                View(phaseView, scoresView, cardView, activePlayer)
+                View(phaseView, playerView, tableView)
 
             case EndGame => 
                 throw new IllegalMoveException("Not implemented yey!")

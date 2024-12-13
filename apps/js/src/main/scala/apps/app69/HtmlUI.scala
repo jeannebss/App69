@@ -58,7 +58,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
     def renderPhase(userId: UserId, phaseView: PhaseView): Frag = 
         phaseView match
-            case Selecting =>
+            case ChoiceSelection =>
                 frag(
                     div(cls := "controls")(
                     button(id := "raise")(
@@ -86,9 +86,9 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
             case NotPlaying => frag()
 
-            case MadeChoice(choice) => frag()
+            case ChoiceMade(choice) => frag()
 
-            case Winner(players) => frag(
+            case Winners(players) => frag(
                 div(id := "winner")(
                     "Winner: ", players.mkString(", ")
                 )
@@ -107,21 +107,31 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
     def renderPlayers(userId: UserId, playersView: PlayersView): Frag = 
         playersView match
-            case PlayersView.InGame(playerAttributes, hand) =>
-                val (id, balance, stillInGame, isCurrentPlayer) = playerAttributes(userId)
+            case InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, hand) =>
                 frag(
-                    renderUserId(userId, balance, hand, stillInGame),
-                    for user <- playerAttributes.keys.filter(_!=userId) do
-                        val (id, balance, stillInGame, isCurrentPlayer) = playerAttributes(user)
-                        renderOpponent(user, id, balance, stillInGame, isCurrentPlayer, Hand(Card(1,"♥️"),Card(1,"♥️")))
+                    renderUserId(userId, playerBalance(userId), hand, activePlayers(userId)),
+                    for user <- playerIndex.keys.filter(_ != userId) do
+                        renderOpponent(
+                            user, 
+                            playerIndex(user),
+                            playerBalance(user),
+                            activePlayers(user),
+                            user == currentPlayer, 
+                            Hand(Card(1,"♥️"),Card(1,"♥️"))
+                        )
                 )
-            case PlayersView.Reveal(playerAttributes) => 
-                val (id, balance, stillInGame, hand) = playerAttributes(userId)
+            case PlayerCardReveal(playerIndex, playerBalance, activePlayers, playerHands) => 
                 frag(
-                    renderUserId(userId, balance, hand, stillInGame),
-                    for user <- playerAttributes.keys.filter(_!=userId) do
-                        val (id, balance, stillInGame, hand) = playerAttributes(user)
-                        renderOpponent(user, id, balance, stillInGame, false, hand)
+                    renderUserId(userId, playerBalance(userId), playerHands(userId), activePlayers(userId)),
+                    for user <- playerIndex.keys.filter(_ != userId) do
+                        renderOpponent(
+                            user,
+                            playerIndex(user),
+                            playerBalance(user),
+                            activePlayers(user),
+                            false,
+                            playerHands(user)
+                        )
                 )
 
     def renderUserId(userId : UserId, balance: Balance, hand: Hand, stillInGame: Boolean): Frag = 

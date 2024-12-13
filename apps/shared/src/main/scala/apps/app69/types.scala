@@ -1,4 +1,5 @@
 package apps
+package app69
 
 import cs214.webapp.UserId
 
@@ -85,8 +86,8 @@ case class GameState(
 )
 
 enum Phase:
-    case InGame
-    case PlayerChoice(choice: Choice)
+    case InGame(turn: Int)
+    case PlayerChoice(turn: Int, choice: Choice)
     case CardReveal
     case Reveal
     case EndGame 
@@ -97,12 +98,11 @@ case class View(
     tableView: TableView
 )
 
-
 enum PhaseView:
-    case Selecting
+    case ChoiceSelection
     case NotPlaying
-    case MadeChoice(choice: Choice)
-    case Winner(winners: Vector[UserId])
+    case ChoiceMade(choice: Choice)
+    case Winners(winners: Vector[UserId])
     case IsReady
     case End(winners: Vector[UserId], balance: Balance)
 
@@ -112,8 +112,19 @@ case class TableView(
 )
 
 enum PlayersView:
-    case InGame(playerAttributes: Map[UserId, (Int, Balance, Boolean, Boolean)], hand: Hand)
-    case Reveal(playerAttributes: Map[UserId, (Int, Balance, Boolean, Hand)])
+    case InGamePlayer(
+        playerIndex: Map[UserId, Int],
+        playerBalance: Map[UserId, Balance],
+        activePlayers: Map[UserId, Boolean],
+        currentPlayer: UserId,
+        hand: Hand
+    )
+    case PlayerCardReveal(
+        playerIndex: Map[UserId, Int],
+        playerBalance: Map[UserId, Balance],
+        activePlayers: Map[UserId, Boolean],
+        playerHands: Map[UserId, Hand]
+    )
 
 enum Event:
     case PlayerAction(choice: Choice)
