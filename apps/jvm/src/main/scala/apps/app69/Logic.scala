@@ -304,7 +304,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                     if userId == currentPlayer then ChoiceSelection
                     else NotPlaying
                 val playersView = InGamePlayer(
-                    players.zipWithIndex.toMap, // needs change in logic
+                    players.filter(_ != userId).zipWithIndex.toMap, // needs change in logic
                     playerBalance,
                     activePlayer,
                     currentPlayer,
@@ -315,7 +315,7 @@ class Logic extends StateMachine[Event, GameState, View]:
             case PlayerChoice(turn, choice) =>
                 val phaseView = ChoiceMade(choice)
                 val playersView = InGamePlayer(
-                    players.zipWithIndex.toMap, // needs change in logic
+                    players.filter(_ != userId).zipWithIndex.toMap, // needs change in logic
                     playerBalance,
                     activePlayer,
                     currentPlayer,
@@ -327,7 +327,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 val maxBalance = playerBalance.values.max
                 val phaseView = Winners(playerBalance.filter(_._2 == maxBalance).keys.toVector)
                 val playerView = PlayerCardReveal(
-                    players.zipWithIndex.toMap, // needs change in logic
+                    players.filter(_ != userId).zipWithIndex.toMap, // needs change in logic
                     playerBalance,
                     activePlayer,
                     playerCards

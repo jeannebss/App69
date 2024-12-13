@@ -63,7 +63,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                     button(id := "raise")(
                         "Raise: ",
                         input(
-                            `type` := "text",
+                            `type` := "number",
                             id := "bet",
                             placeholder := "Enter bet",
                             size := 6,
@@ -79,7 +79,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                         ),
                     button(id := "check", onclick:={ () => sendEvent(PlayerAction(Check))})("Check"),
                     button(id := "call", onclick:={ () => sendEvent(PlayerAction(Call))})("Call"),
-                    button(id := "fold",onclick:={ () => sendEvent(PlayerAction(Fold))})("Fold")
+                    button(id := "fold", onclick:={ () => sendEvent(PlayerAction(Fold))})("Fold")
                     ) 
                 )
 
@@ -93,10 +93,10 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 )
             )
             case IsReady => frag(
-                            div(cls := "controls")(
-                                button(id := "continue", onclick:={ () => sendEvent(Event.Ready)})("Click if you're ready")
-                            )
-                        )
+                div(cls := "controls")(
+                    button(id := "continue", onclick:={ () => sendEvent(Event.Ready)})("Click if you're ready")
+                )
+            )
             case End(players,balance) => frag(
                 div(id := "end")(
                     "Winner: ", players.mkString(", "),
@@ -179,7 +179,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
 
     override def css: String = super.css + 
         """
-            html{
+            html {
                 text-align: center;
                 font-family: 'Inknut Antiqua', serif;
                 color: black;
@@ -188,7 +188,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
             .player > div {
                 line-height: 1.2; 
             }
-            body{
+            body {
                 background-color: #e1e1e1;
                 margin:1em;
                 height:100%;
@@ -206,7 +206,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 background-color: #bababa;
                 border-radius: 50%;
             }
-            .center-table{
+            .center-table {
                 position: absolute;
                 top:6%;
                 display: grid;
@@ -217,7 +217,7 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 background-color: #4c654d;
                 border-radius: 50%;
             }
-            .deck{
+            .deck {
                 display:flex;
                 flex-direction:column;
                 font-size:4.5em;
@@ -240,27 +240,26 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 font-size: 2em;
                 padding: 0.5em;
             }
-            #player1 {
-                top:30%;
-                left:10%;
-            }
-            #player2 {
-                top:5%;
-                left:75%;
-            }
-            #player0 {
+            #current-player {
                 top:85%;
                 left:45%;
             }
-            #player3 {
+            #player0 {
+                top:30%;
+                left:10%;
+            }
+            #player1 {
+                top:5%;
+                left:75%;
+            }
+            #player2 {
                 top:60%;
                 left:5%	
             }
-            #player4 {
+            #player3 {
                 top:50%;
                 left:85%;
             }
-
             .controls {
                 position: absolute;
                 bottom: 1%;   
@@ -270,7 +269,6 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 width: 60%;
                 gap: 2%;
             }
-
             button {
                 padding: 1px 20px;
                 background-color: white;
@@ -279,7 +277,6 @@ class HtmlUIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: T
                 cursor: pointer;
                 font-family: 'Inknut Antiqua', serif;
             }
-
             #continue {
                 background-color:black;
                 color:white;
