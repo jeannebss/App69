@@ -299,7 +299,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
     override def project(state: GameState)(userId: UserId): View =
         val GameState(
-            players,
+            _,
             playerBalance,
             poolValue,
             currentPlayer,
@@ -319,6 +319,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 case 2 => 4
                 case _ => 5
         
+        val indexes = PLAYERS.filter(_ != userId).zipWithIndex.toMap
         phase match
             case InGame(turn) =>
                 val phaseView = 
@@ -329,7 +330,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                     poolValue
                 )
                 val playersView = InGamePlayer(
-                    players.filter(_ != userId).map(user => user -> players.indexOf(user)).toMap,
+                    indexes,
                     playerBalance,
                     activePlayer,
                     currentPlayer,
@@ -344,7 +345,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                     poolValue
                 )
                 val playersView = InGamePlayer(
-                    players.filter(_ != userId).map(user => user -> players.indexOf(user)).toMap,
+                    indexes,
                     playerBalance,
                     activePlayer,
                     currentPlayer,
@@ -357,7 +358,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 val phaseView = Winners(playerBalance.filter(_._2 == maxBalance).keys.toVector)
                 val tableView = TableView(dealerCards.toVector, poolValue)
                 val playerView = PlayerCardReveal(
-                    players.filter(_ != userId).map(user => user -> players.indexOf(user)).toMap,
+                    indexes,
                     playerBalance,
                     activePlayer,
                     playerCards
