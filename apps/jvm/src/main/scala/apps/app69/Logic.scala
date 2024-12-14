@@ -144,7 +144,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                     case Call =>
 
-                        if (!playerBalance.forall((id, money) => money == 0))
+                        if (playerBalance.forall((id, money) => money == 0))
                             then throw IllegalMoveException("You cannot Call")
 
                         //Modify all the balance
