@@ -94,7 +94,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 choice match
                     case Check =>
                         //No player actions
-                        if (turnBets(userId) != highestBet || playerBalance.forall((id, money) => money != 0))
+                        if (turnBets(userId) != highestBet || turnBets.forall((id, money) => money != 0))
                             then throw IllegalMoveException("You cannot check")
                         
                         val updateCurrentPlayer = selectNextPlayer(activePlayer, (players.indexOf(currentPlayer)+1)%number)
@@ -144,7 +144,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                     case Call =>
 
-                        if (playerBalance.forall((id, money) => money == 0))
+                        if (turnBets.forall((id, money) => money == 0))
                             then throw IllegalMoveException("You cannot Call")
 
                         //Modify all the balance
