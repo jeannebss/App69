@@ -1,4 +1,5 @@
 package apps
+package app69
 
 import cs214.webapp.UserId
 
@@ -54,6 +55,8 @@ object CardSymbols:
         val unicode = (base + suitDecalage + cardValueOffset)
         new String(Character.toChars(unicode))
 
+    val back: String = "🂠"
+
 object AllCards:
     def apply: List[Card] =
         (for
@@ -61,7 +64,10 @@ object AllCards:
             suit <- Suit.AllSuits
         yield Card(value, suit)).toList
 
-case class Hand(first: Card, second: Card)
+enum Hands:
+    case EmptyHand
+    case Hand(first: Card, second: Card)
+
 
 case class GameState(
     players: List[UserId],
@@ -69,7 +75,7 @@ case class GameState(
     poolValue: Balance,
     currentPlayer: UserId,
     dealerCards: List[Card],
-    playerCards: Map[UserId, Hand],
+    playerCards: Map[UserId, Hands],
     phase: Phase,
     activePlayer: Map[UserId, Boolean],
     smallBlind: UserId,
@@ -86,25 +92,38 @@ enum Phase:
 
 case class View(
     phaseView: PhaseView,
-    scoresView: ScoresView,
-    cardView: CardView
+    playersView: PlayersView,
+    tableView: TableView
 )
 
 enum PhaseView:
     case ChoiceSelection
     case NotPlaying
     case ChoiceMade(choice: Choice)
-    case Winner
+    case Winners(winners: Vector[UserId])
+    case IsReady
+    case End(winners: Vector[UserId], balance: Balance)
 
-enum CardView:
-    case InGameCards(playerCards: Hand, dealerCards: Vector[Card])
-    case RevealCards(playerCards: Map[UserId, Hand], dealerCards: Vector[Card])
-
-case class ScoresView(
-    playerScores: Map[UserId, Balance],
+case class TableView(
+    dealerCards: Vector[Card],
     poolBalance: Balance
 )
-    
+
+enum PlayersView:
+    case InGamePlayer(
+        playerIndex: Map[UserId, Int],
+        playerBalance: Map[UserId, Balance],
+        activePlayers: Map[UserId, Boolean],
+        currentPlayer: UserId,
+        hand: Hands
+    )
+    case PlayerCardReveal(
+        playerIndex: Map[UserId, Int],
+        playerBalance: Map[UserId, Balance],
+        activePlayers: Map[UserId, Boolean],
+        playerHands: Map[UserId, Hands]
+    )
+
 enum Event:
     case PlayerAction(choice: Choice)
     case EndGameChoice(choice: Boolean)

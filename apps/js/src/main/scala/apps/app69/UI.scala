@@ -1,33 +1,43 @@
 package apps
+
 package app69
 
-import apps.*
 import cs214.webapp.*
 import cs214.webapp.client.*
-import cs214.webapp.client.graphics.{WebClientAppInstance}
-import org.scalajs.dom
-import scalatags.JsDom.all._
-import apps.CardView.*
-import apps.PhaseView.*
+import scalatags.JsDom.all
+import scalatags.JsDom.all.*
 
-import scala.scalajs.js.annotation.JSExportTopLevel
+import scala.scalajs.js.annotation.{JSExportAll, JSExportTopLevel}
+import cs214.webapp.client.graphics.WebClientAppInstance
+
+import Phase.*
+import PhaseView.* 
+import Choice.*
+import CardSymbols.back
+import PlayersView.*
+import Event.* 
+import Hands.*
+
+import org.scalajs.dom
+import scala.compiletime.ops.double
+
 
 @JSExportTopLevel("app69")
 object UI extends WSClientApp:
-
-    def uiId: UIId = "html"
-
+    
     def appId: String = "app69"
     
-    def init(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Element): ClientAppInstance =
-        Instance(userId, sendMessage, target)
+    def uiId: UIId = "html"
 
-class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Element)
-  extends WebClientAppInstance[Event, View](userId, sendMessage, target):
-    override val wire: AppWire[Event, View] = Wire
+    def init(userId: UserId, sendMessage: ujson.Value => Unit, target: Target): ClientAppInstance =
+        UIInstance(userId, sendMessage, target)
+
+class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Target)
+    extends WebClientAppInstance[Event, View](userId, sendMessage, target):
+
+    override val wire = Wire
 
     override def render(userId: UserId, view: View): Frag =
-        val View(phaseView,scoresView,cardView) = view
         frag(
             head(
                 link(
@@ -35,250 +45,264 @@ class Instance(userId: UserId, sendMessage: ujson.Value => Unit, target: dom.Ele
                     rel := "stylesheet"
                 )
             ),
-        phaseView match
-            case ChoiceSelection => InGameCardsUIrender(true, false, userId, scoresView, cardView)
-            case NotPlaying => InGameCardsUIrender(false, false, userId, scoresView, cardView)
-            case ChoiceMade(choice) => InGameCardsUIrender(false, false, userId, scoresView, cardView)
-            case Winner => InGameCardsUIrender(false, true, userId, scoresView, cardView)
+            renderView(userId, view)
         )
-        
-    def InGameCardsUIrender(isSelecting: Boolean, endOfTurn: Boolean, userId: UserId, scoresView: ScoresView, cardView : CardView): Frag =
-        val playerCards: Map[String,String] = cardView match
-            case InGameCards(playerCards, _) => Map(userId -> (CardSymbols(playerCards.first) + CardSymbols(playerCards.second)))
-            case RevealCards(playerCards, _) => playerCards.map((userId, hand) => userId -> (CardSymbols(hand.first) + CardSymbols(hand.second)))
-        val handOfDealer = cardView match
-            case InGameCards(_, dealerCards) => dealerCards.map(CardSymbols.apply).mkString
-            case RevealCards(_, dealerCards) => dealerCards.map(CardSymbols.apply).mkString
-        val handOfDealerNumber = cardView match
-            case InGameCards(_, dealerCards) => dealerCards.size
-            case RevealCards(_, dealerCards) => dealerCards.size
-    
-        val poolBalance = scoresView.poolBalance
-        val playersScores = scoresView.playerScores
-        val players = scoresView.playerScores.keys.toList.filter(_ != userId)
-        val playersInGame = (0 to 4).map(i => players.lift(i).getOrElse("")).toList
-        val winner = scoresView.playerScores.maxBy(_._2)._1
-        val winnerBalance = scoresView.playerScores(winner)
-        
+
+    def renderView(userId: UserId, view: View): Frag =
         frag(
-                body(
-                    h1(id :="name-of-page")("6poker9"),
-                    div(cls := "game-container")(
-                        div(cls := "game-table")(
-                        div(cls := "all-table")(
-                            div(cls := "center-table")(
-                            div(cls := "deck")(
-                                span(cls := "turned-cards")("🂠" * (5 - handOfDealerNumber)),
-                                span(cls := "cards-on-table")(handOfDealer),
-                            ),
-                            div(cls := "amount-in-pool")("Amount in the pool: ", poolBalance," CHF")),
-                            div(cls := "pot")(span(cls := "money")("💰"))
-                            )
-                        ),
-                        
-                        div(cls := "player", id := "player1")(
-                            div(cls := "player-name")(playersInGame(0)),
-                            div(cls := "cards")(if playersInGame(0)=="" then "" else if (endOfTurn) then playerCards(playersInGame(0)) else"🂠🂠"),
-                            div(cls := "balance")(if playersInGame(0)=="" then "" else "Balance :" + playersScores(playersInGame(0)))
-                        ),
-                        div(cls := "player", id := "player2")(
-                            div(cls := "player-name")(playersInGame(1)),
-                            div(cls := "cards")(if playersInGame(1)=="" then "" else if (endOfTurn) then playerCards(playersInGame(1)) else"🂠🂠"),
-                            div(cls := "balance")(if playersInGame(1)=="" then "" else "Balance :" + playersScores(playersInGame(1)))
-                        ),
-                        div(cls := "player", id := "player3")(
-                            div(cls := "player-name")(userId),
-                            div(cls := "cards")(playerCards.getOrElse(userId, "")),
-                            div(cls := "balance")("Balance :", playersScores(userId))
-                        ),
-                        div(cls := "player", id := "player4")(
-                            div(cls := "player-name")(playersInGame(2)),
-                            div(cls := "cards")(if playersInGame(2)=="" then "" else if (endOfTurn) then playerCards(playersInGame(2)) else"🂠🂠"),
-                            div(cls := "balance")(if playersInGame(2)=="" then "" else "Balance :" + playersScores(playersInGame(2)))
-                        ),
-                        div(cls := "player", id := "player5")(
-                            div(cls := "player-name")(playersInGame(3)),
-                            div(cls := "cards")(if playersInGame(3)=="" then "" else if (endOfTurn) then playerCards(playersInGame(3)) else"🂠🂠"),
-                            div(cls := "balance")(if playersInGame(3)=="" then "" else "Balance :" + playersScores(playersInGame(3)))
-                        )
-                    ),
-                    if (endOfTurn) then {
-                        frag(
-                            div(cls := "controls")(
-                                button(id := "continue", onclick:={ () => sendEvent(Event.Ready)})("Click if you're ready")
-                            )
-                        )
-                    } else if (isSelecting) {
-                    frag(
-                        div(cls := "controls")(
-                        button(id := "raise")(
-                            "Raise: ",
-                            input(
-                                `type` := "text",
-                                id := "bet",
-                                placeholder := "Enter bet",
-                                size := 6,
-                                onkeydown := { (event: dom.KeyboardEvent) =>
-                                    if event.key == "Enter" then {
-                                        val inputElement = event.target.asInstanceOf[dom.html.Input]
-                                        val betValue = inputElement.value
-                                        sendEvent(Event.PlayerAction(Choice.Raise(betValue.toInt)))
-                                    }
+            h1(id :="name-of-page")("6poker9"),
+            renderPhase(userId, view.phaseView),
+            div(cls := "all-table")(renderTable(userId, view.tableView)),
+            renderPlayers(userId, view.playersView)
+        )
+
+    def renderPhase(userId: UserId, phaseView: PhaseView): Frag = 
+        phaseView match
+            case ChoiceSelection =>
+                frag(
+                    div(cls := "controls")(
+                    button(id := "raise")(
+                        "Raise: ",
+                        input(
+                            `type` := "type",
+                            id := "bet",
+                            placeholder := "Enter bet",
+                            size := 6,
+                            onkeydown := { (event: dom.KeyboardEvent) =>
+                                if event.key == "Enter" then {
+                                    val inputElement = event.target.asInstanceOf[dom.html.Input]
+                                    val betValue = inputElement.value
+                                    sendEvent(Event.PlayerAction(Choice.Raise(betValue.toInt)))
                                 }
-                            ),
-                            " CHF"
-                            ),
-                        button(id := "check", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Check))})("Check"),
-                        button(id := "call", onclick:={ () => sendEvent(Event.PlayerAction(Choice.Call))})("Call"),
-                        button(id := "fold",onclick:={ () => sendEvent(Event.PlayerAction(Choice.Fold))})("Fold")
-                        ) 
-                    )
-                } else {
-                    frag()
-                }
+                            }
+                        ),
+                        " CHF"
+                        ),
+                    button(id := "check", onclick:={ () => sendEvent(PlayerAction(Check))})("Check"),
+                    button(id := "call", onclick:={ () => sendEvent(PlayerAction(Call))})("Call"),
+                    button(id := "fold", onclick:={ () => sendEvent(PlayerAction(Fold))})("Fold")
+                    ) 
+                )
+
+            case NotPlaying => frag()
+
+            case ChoiceMade(choice) => frag()
+
+            case Winners(players) => frag(
+                div(id := "winner")(
+                    "Winner: ", players.mkString(", ")
+                )
             )
-        )    
+            case IsReady => frag(
+                div(cls := "controls")(
+                    button(id := "continue", onclick:={ () => sendEvent(Event.Ready)})("Click if you're ready")
+                )
+            )
+            case End(players,balance) => frag(
+                div(id := "end")(
+                    "Winner: ", players.mkString(", "),
+                    "Balance: ", balance
+                )
+            )
 
-    override def css: String = super.css + """
-    html{
-        text-align: center;
-        font-family: 'Inknut Antiqua', serif;
-        color: black;
-        background: #f6f6f6;
-    }
+    def renderPlayers(userId: UserId, playersView: PlayersView): Frag = 
+        playersView match
+            case InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, hand) =>
+                frag(
+                    renderUserId(userId, playerBalance(userId), hand, activePlayers(userId)),
+                    frag(
+                        playerIndex.keys.filter(_ != userId).toSeq.map{ user =>
+                            renderOpponent(
+                                user, 
+                                playerIndex(user),
+                                playerBalance(user),
+                                activePlayers(user),
+                                user == currentPlayer, 
+                                Hand(Card(14,"♥️"),Card(2,"♥️"))
+                            )
+                        }
+                    )
+                )
+                
+            case PlayerCardReveal(playerIndex, playerBalance, activePlayers, playerHands) => 
+                frag(
+                    renderUserId(userId, playerBalance(userId), playerHands(userId), activePlayers(userId)),
+                    frag(
+                        playerIndex.keys.filter(_ != userId).toSeq.map { user =>
+                            renderOpponent(
+                                user,
+                                playerIndex(user),
+                                playerBalance(user),
+                                activePlayers(user),
+                                false,
+                                playerHands(user)
+                            )
+                        }
+                    )
+                )
+                
 
-    .player > div {
-        line-height: 1.2; 
-    }
+    def renderUserId(userId : UserId, balance: Balance, hand: Hand, stillInGame: Boolean): Frag = 
+        frag(
+            div(cls := "player", id := "current-player")(
+                div(cls := "player-name")(userId),
+                renderHand(hand, true, stillInGame),
+                div(cls := "balance")(s"Balance : $balance CHF")
+            )               
+        )
 
-    #name-of-page{
-        position : absolute;
-        font-size: 3em;
-        top : 0%;
-        left : 42%;
-    }
+    def renderOpponent(opponent : UserId, idOfPlayer: Int, balance: Balance, stillInGame: Boolean, isCurrentPlayer: Boolean, hand: Hand): Frag =
+        val nameOfPlayer = if isCurrentPlayer then (opponent +"💰") else opponent
+        frag(
+            div(cls := "player", id := s"player$idOfPlayer")(
+                div(cls := "player-name")(nameOfPlayer),
+                renderHand(hand, false, stillInGame),
+                div(cls := "balance")(s"Balance : $balance CHF")
+            ) 
+        )
 
-    body{
-        background-color: #e1e1e1;
-        margin:1em;
-        height:100%;
-    }
+    def renderTable(userId: UserId, tableView: TableView): Frag =
+        frag(
+            div(cls := "center-table")(renderDealerCards(tableView.dealerCards),
+            div(cls := "amount-in-pool")("Amount in the pool: ", tableView.poolBalance," CHF")),
+            div(cls := "pot")(span(cls := "money")("💰"))
+        )
+
+    def renderHand(hand: Hand, front: Boolean, stillInGame: Boolean): Frag =
+        if front && stillInGame then 
+            frag(div(cls := "cards")(CardSymbols(hand.first) + CardSymbols(hand.second))) 
+        else if stillInGame then 
+            frag(
+                div(cls := "cards")(CardSymbols.back * 2)
+            )
+        else {
+            frag()
+        }
     
-    .all-table {
-        position: absolute;  
-        top: 50%;            
-        left: 50%;           
-        transform: translate(-50%, -50%); 
-        display: grid;
-        place-items: center;
-        width: 50%;
-        height: 60%;
-        color: white;
-        background-color: #bababa;
-        border-radius: 50%;
-    }
+    def renderDealerCards(dealerCards: Vector[Card]): Frag =
+        frag(
+            div(cls := "deck")(
+            span(cls := "cards-on-table")(CardSymbols.back * (5 - dealerCards.size)),
+            span(cls := "turned-cards")(dealerCards.map(CardSymbols.apply).mkString)
+            )
+        )
 
-    .center-table{
-        position: absolute;
-        top:6%;
-        display: grid;
-        place-items: center;
-        line-height:2;
-        width: 92%;
-        height: 88%;
-        background-color: #4c654d;
-        border-radius: 50%;
-    }
-
-    .deck{
-        display:flex;
-        flex-direction:column;
-        font-size:5.5em;
-        line-height:120%;
-    }
-
-    .player{
-        position: absolute;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .cards{
-        font-size:5em;
-        margin-bottom: 5%;
-    }
-
-    .pot {
-        position: absolute;
-        top: 50%;
-        left: 10%;
-        transform: translateY(-50%); 
-        font-size: 2em;
-        padding: 0.5em;
-    }
-
-    #player1{
-        top:30%;
-        left:10%;
-    }
-    #player2{
-        top:5%;
-        left:75%;
-    }
-    #player3{
-        top:80%;
-        left:45%;
-    }
-    #player4{
-        top:60%;
-        left:5%	
-    }
-    #player5{
-        top:50%;
-        left:85%;
-    }
-
-    .controls{
-        position: absolute;
-        bottom: 1%;   
-        display: flex;
-        flex-direction: row;
-        align-items: flex-end;  
-        width: 60%;
-        gap: 2%;
-    }
-
-    button{
-        padding: 1px 20px;
-        background-color: white;
-        border: none;
-        border-radius: 15px;
-        cursor: pointer;
-        font-family: 'Inknut Antiqua', serif;
-    }
-
-    #continue{
-        background-color:black;
-        color:white;
-        padding: 5px 25px;
-    }
-    #raise{
-        background-color: #4ba652;
-        cursor: default;
-    }
-    #bet{
-        padding : 0px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-    }
-    #check{
-        background-color: #8e8e8e;
-    }
-    #call{
-        background-color: #954d3f;
-    }
-    #fold{
-        background-color:#f4625c;
-    }
-    """
-    
+    override def css: String = super.css + 
+        """
+            html {
+                text-align: center;
+                font-family: 'Inknut Antiqua', serif;
+                color: black;
+                background: #f6f6f6;
+            }
+            .player > div {
+                line-height: 1.2; 
+            }
+            body {
+                background-color: #e1e1e1;
+                margin:1em;
+                height:100%;
+            }
+            .all-table {
+                position: absolute;  
+                top: 50%;            
+                left: 50%;           
+                transform: translate(-50%, -50%); 
+                display: grid;
+                place-items: center;
+                width: 50%;
+                height: 60%;
+                color: white;
+                background-color: #bababa;
+                border-radius: 50%;
+            }
+            .center-table {
+                position: absolute;
+                top:6%;
+                display: grid;
+                place-items: center;
+                line-height:2;
+                width: 92%;
+                height: 88%;
+                background-color: #4c654d;
+                border-radius: 50%;
+            }
+            .deck {
+                display:flex;
+                flex-direction:column;
+                font-size:4.5em;
+                line-height:120%;
+            }
+            .player {
+                position: absolute;
+                display: flex;
+                flex-direction: column;
+            }
+            .cards {
+                font-size:3em;
+                margin-bottom: 5%;
+            }
+            .pot {
+                position: absolute;
+                top: 50%;
+                left: 10%;
+                transform: translateY(-50%); 
+                font-size: 2em;
+                padding: 0.5em;
+            }
+            #current-player {
+                top:85%;
+                left:45%;
+            }
+            #player0 {
+                top:30%;
+                left:10%;
+            }
+            #player1 {
+                top:5%;
+                left:75%;
+            }
+            #player2 {
+                top:60%;
+                left:5%	
+            }
+            #player3 {
+                top:50%;
+                left:85%;
+            }
+            .controls {
+                position: absolute;
+                bottom: 1%;   
+                display: flex;
+                flex-direction: row;
+                align-items: flex-end;  
+                width: 60%;
+                gap: 2%;
+            }
+            button {
+                padding: 1px 20px;
+                background-color: white;
+                border: none;
+                border-radius: 15px;
+                cursor: pointer;
+                font-family: 'Inknut Antiqua', serif;
+            }
+            #continue {
+                background-color:black;
+                color:white;
+                padding: 5px 25px;
+            }
+            #raise {
+                background-color: #4ba652;
+                cursor: default;
+            }
+            #check {
+                background-color: #8e8e8e;
+            }
+            #call {
+                background-color: #954d3f;
+            }
+            #fold {
+                background-color:#f4625c;
+            }
+        """

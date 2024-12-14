@@ -33,13 +33,13 @@ class Logic extends StateMachine[Event, GameState, View]:
 
     private val SMALL_BLIND = 10
 
-    import apps.Phase.* 
-    import apps.Event.*
-    import apps.Choice.* 
-    import apps.PhaseView.*
-    import apps.Card.*
-    import apps.CardView.*
-
+    import app69.Phase.* 
+    import app69.Event.*
+    import app69.Choice.* 
+    import app69.PhaseView.*
+    import app69.Card.*
+    import app69.PlayersView.*
+    import app69.Hands.*
     override def init(clients: Seq[UserId]): GameState =
         if clients.size < 2 then
             throw new IllegalMoveException("Not enough players")
@@ -304,38 +304,57 @@ class Logic extends StateMachine[Event, GameState, View]:
             turnBets
         ) = state
         
-        val scoresView = ScoresView(playerBalance, poolValue)
         def numberOfCard(turn: Int): Int =
             turn match
                 case 0 => 0
                 case 1 => 3
                 case 2 => 4
                 case _ => 5
-                
+        
         phase match
             case InGame(turn) =>
-                val cardView = InGameCards(
-                    playerCards(userId), 
-                    dealerCards.take(numberOfCard(turn)).toVector
+                val phaseView = 
+                    if userId == currentPlayer then ChoiceSelection
+                    else NotPlaying
+                val tableView = TableView(
+                    dealerCards.take(numberOfCard(turn)).toVector,
+                    poolValue
                 )
-                val phaseView = ChoiceSelection
-                View(phaseView, scoresView, cardView)
+                val playersView = InGamePlayer(
+                    players.filter(_ != userId).map(user => user -> players.indexOf(user)).toMap,
+                    playerBalance,
+                    activePlayer,
+                    currentPlayer,
+                    playerCards(userId)
+                )
+                View(phaseView, playersView, tableView)
             
             case PlayerChoice(turn, choice) =>
-                val cardView = InGameCards(
-                    playerCards(userId), 
-                    dealerCards.take(numberOfCard(turn)).toVector
-                )
                 val phaseView = ChoiceMade(choice)
-                View(phaseView, scoresView, cardView)
+                val tableView = TableView(
+                    dealerCards.take(numberOfCard(turn)).toVector,
+                    poolValue
+                )
+                val playersView = InGamePlayer(
+                    players.filter(_ != userId).map(user => user -> players.indexOf(user)).toMap,
+                    playerBalance,
+                    activePlayer,
+                    currentPlayer,
+                    playerCards(userId)
+                )
+                View(phaseView, playersView, tableView)
 
             case CardReveal | Reveal =>
-                val cardView = RevealCards(
-                    playerCards,
-                    dealerCards.toVector
+                val maxBalance = playerBalance.values.max
+                val phaseView = Winners(playerBalance.filter(_._2 == maxBalance).keys.toVector)
+                val tableView = TableView(dealerCards.toVector, poolValue)
+                val playerView = PlayerCardReveal(
+                    players.filter(_ != userId).map(user => user -> players.indexOf(user)).toMap,
+                    playerBalance,
+                    activePlayer,
+                    playerCards
                 )
-                val phaseView = Winner
-                View(phaseView, scoresView, cardView)
+                View(phaseView, playerView, tableView)
 
             case EndGame => 
                 throw new IllegalMoveException("Not implemented yey!")

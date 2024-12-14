@@ -1,5 +1,7 @@
 package apps
 
+package app69
+
 import cs214.webapp.UserId
 import cs214.webapp.*
 import cs214.webapp.Action
@@ -10,16 +12,16 @@ import org.scalacheck.*
 import Gen.*
 import Prop.*
 
-import apps.Phase.* 
-import apps.Event.*
-import apps.Choice.* 
-import apps.PhaseView.*
-import apps.Card.*
-import apps.CardView.*
-import apps.Wire.*
-import apps.Wire.eventFormat
-import apps.Wire.PhaseViewWire
-import apps.Wire.viewFormat
+import app69.Phase.* 
+import app69.Event.*
+import app69.Choice.* 
+import app69.PhaseView.*
+import app69.Card.*
+import app69.PlayersView.*
+import app69.Wire.*
+import app69.Wire.eventFormat
+import app69.Wire.PhaseViewWire
+import app69.Wire.viewFormat
 
 // Simple encode decode tests
 class WireTest extends munit.FunSuite:
@@ -53,42 +55,19 @@ class WireTest extends munit.FunSuite:
             val hand = Hand(card1, card2)
             val res = HandWire.decode(HandWire.encode(hand)).get
             assertEquals(hand, res)
-        
-    test("ScoresView wire encode and decode correctly"):
-        val scoresView = ScoresView(
-            playerScores = Map("Player1" -> 150, "Player2" -> 100),
-            poolBalance = 250
-        )
-        val res = ScoresViewWire.decode(ScoresViewWire.encode(scoresView)).get
-        assertEquals(scoresView, res)
 
     test("PhaseView wire encode and decode correctly"):
         val phaseView = Seq(
             ChoiceSelection,
             NotPlaying,
             ChoiceMade(Raise(20)),
-            Winner
+            Winners(Vector("user1", "user2", "user3")),
+            IsReady,
+            End(Vector("user1", "user2"), 200)
         )
         for pV <- phaseView do
             val res = PhaseViewWire.decode(PhaseViewWire.encode(pV)).get
             assertEquals(pV, res)
-
-    test("CardView wire encode and decode correctly"):
-        val inGameCards = InGameCards(
-            Hand(Card(2, Suit.Diamond), Card(14, Suit.Heart)),
-            Vector(Card(7, Suit.Spade), Card(11, Suit.Club))
-        )
-        val revealCards = RevealCards(
-            playerCards = Map(
-                "Player1" -> Hand(Card(3, Suit.Spade), Card(6, Suit.Heart)),
-                "Player2" -> Hand(Card(5, Suit.Heart), Card(11, Suit.Club))
-            ),
-            dealerCards = Vector(Card(9, Suit.Diamond), Card(13, Suit.Club))
-        )
-        val res1 = CardViewWire.decode(CardViewWire.encode(inGameCards)).get
-        val res2 = CardViewWire.decode(CardViewWire.encode(revealCards)).get
-        assertEquals(inGameCards, res1)
-        assertEquals(revealCards, res2)
 
     test("Event wire encode and decode correctly"):
         val events = Seq(
@@ -100,17 +79,36 @@ class WireTest extends munit.FunSuite:
             val res = eventFormat.decode(eventFormat.encode(event)).get
             assertEquals(event, res)
 
+    test("Table view wire encodes and decodes correctly"):
+        val cards = Vector(Card(14,"♥️"), Card(7,"♥️"), Card(12,"♠️"))
+        val balance = 300
+        val res = TableView(cards, balance)
+        assertEquals(TableViewWire.decode(TableViewWire.encode(res)).get, res)
+
+    test("Players view wire encodes and decodes correctly"):
+        val indexes = Map("user1" -> 1, "user2" -> 2)
+        val balances = Map("user1" -> 100, "user2" -> 200)
+        val active = Map("user1" -> true, "user2" -> false)
+        val current = "user2"
+        val hands = Map("user1" -> Hand(Card(6,"♥️"), Card(9,"♥️")), "user2" -> Hand(Card(7,"♥️"), Card(12,"♠️")))
+        val inGame = InGamePlayer(indexes, balances, active, current, hands("user2"))
+        assertEquals(PlayersViewWire.decode(PlayersViewWire.encode(inGame)).get, inGame)
+        val cardReveal = PlayerCardReveal(indexes, balances, active, hands)
+        assertEquals(PlayersViewWire.decode(PlayersViewWire.encode(cardReveal)).get, cardReveal)
+
+
     test("View wire encode and decode correctly"):
+        val indexes = Map("user1" -> 1, "user2" -> 2)
+        val balances = Map("user1" -> 100, "user2" -> 200)
+        val active = Map("user1" -> true, "user2" -> false)
+        val current = "user2"
+        val cards = Vector(Card(14,"♥️"), Card(7,"♥️"), Card(12,"♠️"))
+        val balance = 300
+        val hands = Map("user1" -> Hand(Card(6,"♥️"), Card(9,"♥️")), "user2" -> Hand(Card(7,"♥️"), Card(12,"♠️")))
         val view = View(
             phaseView = ChoiceSelection,
-            scoresView = ScoresView(
-                playerScores = Map("Player1" -> 200, "Player2" -> 300),
-                poolBalance = 500
-            ),
-            cardView = InGameCards(
-                playerCards = Hand(Card(10, Suit.Club), Card(11, Suit.Spade)),
-                dealerCards = Vector(Card(4, Suit.Heart), Card(8, Suit.Diamond))
-            )
+            playersView = InGamePlayer(indexes, balances, active, current, hands("user2")),
+            TableView(cards, balance)
         )
         val res = viewFormat.decode(viewFormat.encode(view)).get
         assertEquals(view, res)
@@ -160,18 +158,45 @@ object WireSpecifications extends Properties("Wire"):
             c <- choice
         yield ChoiceMade(c)
 
-    val phaseView: Gen[PhaseView] =
-        oneOf(const(ChoiceSelection), const(NotPlaying), choiceMade, const(Winner))
-
     val userId: Gen[UserId] = Arbitrary.arbitrary[String]
-    val balance: Gen[Balance] = Arbitrary.arbitrary[Int]
-    val tupleUserBal: Gen[(UserId, Balance)] = Gen.zip(userId, balance)
 
-    val scoresView: Gen[ScoresView] =
+    val players: Gen[Vector[UserId]] = Gen.containerOf[Vector, UserId](userId)
+    val balance: Gen[Balance] = Arbitrary.arbitrary[Int]
+
+    val winners: Gen[PhaseView] =
+        for 
+            p <- players
+        yield Winners(p)
+
+    val end: Gen[PhaseView] = 
         for
-            m <- buildableOf[Map[UserId, Balance], (UserId, Balance)](tupleUserBal)
-            i <- double
-        yield ScoresView(m, i.toInt)
+            w <- players
+            b <- balance
+        yield End(w, b)
+
+    val phaseView: Gen[PhaseView] =
+        oneOf(const(ChoiceSelection), const(NotPlaying), choiceMade, winners, const(IsReady), end)
+
+    val value: Gen[Value] =
+        for
+            i <- choose(2, 14)
+        yield i
+    
+    val card: Gen[Card] =
+        for
+            v <- value
+            s <- suit
+        yield Card(v, s)
+    
+    val cards: Gen[Vector[Card]] = Gen.containerOf[Vector, Card](card)
+
+    val tableView: Gen[TableView] = 
+        for 
+            c <- cards
+            b <- balance
+        yield TableView(c, b)
+
+    val balances: Gen[Vector[Balance]] = Gen.containerOf[Vector, Balance](balance)
 
     val suit: Gen[String] =
         val spade = const(Suit.Spade)
@@ -180,55 +205,61 @@ object WireSpecifications extends Properties("Wire"):
         val club = const(Suit.Club)
         oneOf(spade, heart, diamond, club)
 
-    val value: Gen[Value] =
-        for
-            i <- choose(2, 14)
-        yield i
-
-    val card: Gen[Card] =
-        for
-            v <- value
-            s <- suit
-        yield Card(v, s)
-
     val hand: Gen[Hand] =
         for
             c1 <- card
             c2 <- card
         yield Hand(c1, c2)
 
-    val cards: Gen[Vector[Card]] = Gen.containerOf[Vector, Card](card)
-
+    val tupleUserIndex: Gen[(UserId, Int)] = Gen.zip(userId, Arbitrary.arbitrary[Int])
+    val tupleUserBalance: Gen[(UserId, Balance)] = Gen.zip(userId, balance)
+    val tupleUserBoolean: Gen[(UserId, Boolean)] = Gen.zip(userId, oneOf(true, false))
     val tupleUserHand: Gen[(UserId, Hand)] = Gen.zip(userId, hand)
 
-    val inGameCards: Gen[CardView] =
+    val mapPlayerIndex: Gen[Map[UserId, Int]] = 
+        Gen.buildableOf[Map[UserId, Int], (UserId, Int)](tupleUserIndex)
+
+    val mapPlayerBalance: Gen[Map[UserId, Balance]] = 
+        Gen.buildableOf[Map[UserId, Balance], (UserId, Balance)](tupleUserBalance)
+
+    val mapPlayerActive: Gen[Map[UserId, Boolean]] = 
+        Gen.buildableOf[Map[UserId, Boolean], (UserId, Boolean)](tupleUserBoolean)
+
+    val mapPlayerHand: Gen[Map[UserId, Hand]] = 
+        Gen.buildableOf[Map[UserId, Hand], (UserId, Hand)](tupleUserHand)
+
+    val inGamePlayer: Gen[PlayersView] =
         for 
-            h <- hand
-            c <- cards
-        yield InGameCards(h, c)
+            idx <- mapPlayerIndex
+            bal <- mapPlayerBalance
+            act <- mapPlayerActive
+            cur <- userId
+            hnd <- hand
+        yield InGamePlayer(idx, bal, act, cur, hnd)
 
-    val revealCards: Gen[CardView] =
+    val playerCardReveal: Gen[PlayersView] =
         for
-            m <- Gen.buildableOf[Map[UserId, Hand], (UserId, Hand)](tupleUserHand)
-            c <- cards
-        yield RevealCards(m, c)
+            idx <- mapPlayerIndex
+            bal <- mapPlayerBalance
+            act <- mapPlayerActive
+            hnd <- mapPlayerHand
+        yield PlayerCardReveal(idx, bal, act, hnd)
 
-    val cardView: Gen[CardView] = 
-        oneOf(inGameCards, revealCards)
+    val playersView: Gen[PlayersView] = oneOf(inGamePlayer, playerCardReveal)
 
     val view: Gen[View] =
         for
-            p <- phaseView
-            s <- scoresView
-            c <- cardView
-        yield View(p, s, c)
+            ph <- phaseView
+            pl <- playersView
+            tb <- tableView
+        yield View(ph, pl, tb)
 
     given Arbitrary[Choice] = Arbitrary(choice)
     given Arbitrary[Event] = Arbitrary(event)
     given Arbitrary[Phase] = Arbitrary(phase)    
     given Arbitrary[PhaseView] = Arbitrary(phaseView)
-    given Arbitrary[CardView] = Arbitrary(cardView)
-    given Arbitrary[ScoresView] = Arbitrary(scoresView)
+    given Arbitrary[PlayersView] = Arbitrary(playersView)
+    given Arbitrary[TableView] = Arbitrary(tableView)
     given Arbitrary[View] = Arbitrary(view)
     given Arbitrary[Hand] = Arbitrary(hand)    
     given Arbitrary[Card] = Arbitrary(card)
@@ -245,11 +276,11 @@ object WireSpecifications extends Properties("Wire"):
     property("phase view wire encodes and decodes correctly for arbitrary phase view") = 
         forAll { (phaseView: PhaseView) => PhaseViewWire.decode(PhaseViewWire.encode(phaseView)).get == phaseView } 
 
-    property("card view wire encodes and decodes correctly for arbitrary card view") = 
-        forAll { (cardView: CardView) => CardViewWire.decode(CardViewWire.encode(cardView)).get == cardView } 
+    property("players view wire encodes and decodes correctly for arbitrary players view") = 
+        forAll { (playersView: PlayersView) => PlayersViewWire.decode(PlayersViewWire.encode(playersView)).get == playersView } 
 
-    property("scores view wire encodes and decodes correctly for arbitrary scores view") = 
-        forAll { (scoresView: ScoresView) => ScoresViewWire.decode(ScoresViewWire.encode(scoresView)).get == scoresView }
+    property("table view wire encodes and decodes correctly for arbitrary table view") = 
+        forAll { (tableView: TableView) => TableViewWire.decode(TableViewWire.encode(tableView)).get == tableView } 
 
     property("view format wire encodes and decodes correctly for arbitrary view") =
         forAll { (view: View) => viewFormat.decode(viewFormat.encode(view)).get == view } 
