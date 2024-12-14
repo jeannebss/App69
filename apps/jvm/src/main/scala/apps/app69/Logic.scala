@@ -34,6 +34,8 @@ class Logic extends StateMachine[Event, GameState, View]:
 
     private val SMALL_BLIND = 10
 
+    private var PLAYERS = Vector[UserId]()
+
     import app69.Phase.* 
     import app69.Event.*
     import app69.Choice.* 
@@ -42,6 +44,7 @@ class Logic extends StateMachine[Event, GameState, View]:
     import app69.PlayersView.*
     import app69.Hands.*
     override def init(clients: Seq[UserId]): GameState =
+        PLAYERS = clients.toVector
         if clients.size < 2 then
             throw new IllegalMoveException("Not enough players")
         val allCards = RANDOM.shuffle(AllCards.apply)
@@ -143,7 +146,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                         if (!playerBalance.forall((id, money) => money == 0))
                             then throw IllegalMoveException("You cannot Call")
-                            
+
                         //Modify all the balance
                         val diff = highestBet - turnBets(currentPlayer)
                         if (diff > playerBalance(userId))
