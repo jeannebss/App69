@@ -45,12 +45,12 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                     rel := "stylesheet"
                 )
             ),
+            h1(id :="name-of-page")("6poker9"),
             renderView(userId, view)
         )
 
     def renderView(userId: UserId, view: View): Frag =
         frag(
-            h1(id :="name-of-page")("6poker9"),
             renderPhase(userId, view.phaseView),
             div(cls := "all-table")(renderTable(userId, view.tableView)),
             renderPlayers(userId, view.playersView)
@@ -118,7 +118,7 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                                 playerBalance(user),
                                 activePlayers(user),
                                 user == currentPlayer, 
-                                Hand(Card(14,"♥️"),Card(2,"♥️"))
+                                EmptyHand
                             )
                         }
                     )
@@ -142,21 +142,21 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                 )
                 
 
-    def renderUserId(userId : UserId, balance: Balance, hand: Hand, stillInGame: Boolean): Frag = 
+    def renderUserId(userId : UserId, balance: Balance, hand: Hands, stillInGame: Boolean): Frag = 
         frag(
             div(cls := "player", id := "current-player")(
                 div(cls := "player-name")(userId),
-                renderHand(hand, true, stillInGame),
+                renderHand(hand, stillInGame),
                 div(cls := "balance")(s"Balance : $balance CHF")
             )               
         )
 
-    def renderOpponent(opponent : UserId, idOfPlayer: Int, balance: Balance, stillInGame: Boolean, isCurrentPlayer: Boolean, hand: Hand): Frag =
+    def renderOpponent(opponent : UserId, idOfPlayer: Int, balance: Balance, stillInGame: Boolean, isCurrentPlayer: Boolean, hand: Hands): Frag =
         val nameOfPlayer = if isCurrentPlayer then (opponent +"💰") else opponent
         frag(
             div(cls := "player", id := s"player$idOfPlayer")(
                 div(cls := "player-name")(nameOfPlayer),
-                renderHand(hand, false, stillInGame),
+                renderHand(hand, stillInGame),
                 div(cls := "balance")(s"Balance : $balance CHF")
             ) 
         )
@@ -168,17 +168,13 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
             div(cls := "pot")(span(cls := "money")("💰"))
         )
 
-    def renderHand(hand: Hand, front: Boolean, stillInGame: Boolean): Frag =
-        if front && stillInGame then 
-            frag(div(cls := "cards")(CardSymbols(hand.first) + CardSymbols(hand.second))) 
-        else if stillInGame then 
-            frag(
-                div(cls := "cards")(CardSymbols.back * 2)
-            )
-        else {
+    def renderHand(hand: Hands, stillInGame: Boolean): Frag =
+        if stillInGame then hand match
+            case EmptyHand => frag(div(cls := "cards")(CardSymbols.back * 2))
+            case Hand(first, second) => frag(div(cls := "cards")(CardSymbols(first) + CardSymbols(second)))    
+        else 
             frag()
-        }
-    
+        
     def renderDealerCards(dealerCards: Vector[Card]): Frag =
         frag(
             div(cls := "deck")(
@@ -198,6 +194,14 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
             .player > div {
                 line-height: 1.2; 
             }
+
+            #name-of-page {
+                position : absolute;
+                font-size: 3em;
+                top : 0%;
+                left : 42%;
+            }
+
             body {
                 background-color: #e1e1e1;
                 margin:1em;
@@ -230,7 +234,7 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
             .deck {
                 display:flex;
                 flex-direction:column;
-                font-size:4.5em;
+                font-size:5.5em;
                 line-height:120%;
             }
             .player {
@@ -239,7 +243,7 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                 flex-direction: column;
             }
             .cards {
-                font-size:3em;
+                font-size:5em;
                 margin-bottom: 5%;
             }
             .pot {
@@ -251,24 +255,24 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                 padding: 0.5em;
             }
             #current-player {
-                top:85%;
-                left:45%;
+                margin-top:80%;
+                margin-left:45%;
             }
             #player0 {
-                top:30%;
-                left:10%;
+                margin-top:30%;
+                margin-left:10%;
             }
             #player1 {
-                top:5%;
-                left:75%;
+                margin-top:5%;
+                margin-left:75%;
             }
             #player2 {
-                top:60%;
-                left:5%	
+                margin-top:60%;
+                margin-left:5%	
             }
             #player3 {
-                top:50%;
-                left:85%;
+                margin-top:50%;
+                margin-left:85%;
             }
             .controls {
                 position: absolute;
@@ -296,6 +300,12 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                 background-color: #4ba652;
                 cursor: default;
             }
+            #bet{
+                padding : 0px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+            }
+
             #check {
                 background-color: #8e8e8e;
             }
