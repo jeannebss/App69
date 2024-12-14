@@ -272,6 +272,9 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                 val newActivePlayer = activePlayer.updated(userId, true)
 
+                if (newActivePlayer.size == 1) then Seq(Action.Pause(1000), Action.Render(state.copy(phase = EndGame, activePlayer = PLAYERS.map(_ -> false).toMap)))
+                else 
+
                  
                 if newActivePlayer.forall((k,v) => v) then//ready means a player is ready to start a new round
                     // penser au fait que les joueurs qui ont perdus ne servent a rien dans le restart
@@ -294,6 +297,12 @@ class Logic extends StateMachine[Event, GameState, View]:
                     Seq(Action.Pause(1000), Action.Render(newGameState))
                                     
             case (Reveal, _) => throw IllegalMoveException("Compare your cards to the other's")
+            case (EndGame, Ready) => 
+                val playersReady = activePlayer.updated(userId, true)
+                if playersReady.forall((k, v) => v) then Seq(Action.Pause(1000), Action.Render(init(PLAYERS.toSeq)))
+                else Seq(Action.Render(state.copy(activePlayer = playersReady)))
+                    
+                                
             case (_) => throw IllegalMoveException("Unsupported phase")
 
     override def project(state: GameState)(userId: UserId): View =
