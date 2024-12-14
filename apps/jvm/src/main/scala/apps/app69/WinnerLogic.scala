@@ -56,6 +56,7 @@ object WinnerLogic:
                     (if multi(2, set.filter(_.value != multi(2, set).get)).isDefined then return HandValue.DoublePair(multi(2, set).get)
                     else return HandValue.Pair(multi(2, set).get))
                         else return HandValue.High(set.map(_.value).max)
+            case EmptyHand => throw IllegalArgumentException("Impossible case")
 
     def winner(players: Map[UserId, Hands], dealer: List[Card], activePlayer: Map[UserId, Boolean]): Winners =
         val activeHand = players.filter((id, h) => activePlayer(id))

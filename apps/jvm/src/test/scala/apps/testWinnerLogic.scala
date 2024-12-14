@@ -1,6 +1,7 @@
 package apps
 package app69
 
+import Hands.*
 
 class Tests extends munit.FunSuite:
     val dealer = List(Card(7, "♥️"), Card(6, "♥️"), Card(11, "♠️"), Card(5, "♥️"), Card(11, "♦️"))

@@ -19,6 +19,7 @@ import app69.PhaseView.*
 import app69.Card.*
 import app69.PlayersView.*
 import app69.Wire.*
+import app69.Hands.*
 import app69.Wire.eventFormat
 import app69.Wire.PhaseViewWire
 import app69.Wire.viewFormat
@@ -50,11 +51,13 @@ class WireTest extends munit.FunSuite:
             val res = CardWire.decode(CardWire.encode(card)).get
             assertEquals(card, res)
 
-    test("Hand wire encode and decode correctly"):
+    test("Hands wire encode and decode correctly"):
         for card1 <- AllCards.apply; card2 <- AllCards.apply do
             val hand = Hand(card1, card2)
-            val res = HandWire.decode(HandWire.encode(hand)).get
+            val res = HandsWire.decode(HandsWire.encode(hand)).get
             assertEquals(hand, res)
+            val empty = HandsWire.decode(HandsWire.encode(EmptyHand)).get
+            assertEquals(empty, EmptyHand)
 
     test("PhaseView wire encode and decode correctly"):
         val phaseView = Seq(
@@ -205,16 +208,18 @@ object WireSpecifications extends Properties("Wire"):
         val club = const(Suit.Club)
         oneOf(spade, heart, diamond, club)
 
-    val hand: Gen[Hand] =
+    val hand: Gen[Hands] =
         for
             c1 <- card
             c2 <- card
         yield Hand(c1, c2)
 
+    val hands: Gen[Hands] = oneOf(hand, const(EmptyHand))
+
     val tupleUserIndex: Gen[(UserId, Int)] = Gen.zip(userId, Arbitrary.arbitrary[Int])
     val tupleUserBalance: Gen[(UserId, Balance)] = Gen.zip(userId, balance)
     val tupleUserBoolean: Gen[(UserId, Boolean)] = Gen.zip(userId, oneOf(true, false))
-    val tupleUserHand: Gen[(UserId, Hand)] = Gen.zip(userId, hand)
+    val tupleUserHands: Gen[(UserId, Hands)] = Gen.zip(userId, hands)
 
     val mapPlayerIndex: Gen[Map[UserId, Int]] = 
         Gen.buildableOf[Map[UserId, Int], (UserId, Int)](tupleUserIndex)
@@ -225,8 +230,8 @@ object WireSpecifications extends Properties("Wire"):
     val mapPlayerActive: Gen[Map[UserId, Boolean]] = 
         Gen.buildableOf[Map[UserId, Boolean], (UserId, Boolean)](tupleUserBoolean)
 
-    val mapPlayerHand: Gen[Map[UserId, Hand]] = 
-        Gen.buildableOf[Map[UserId, Hand], (UserId, Hand)](tupleUserHand)
+    val mapPlayerHands: Gen[Map[UserId, Hands]] = 
+        Gen.buildableOf[Map[UserId, Hands], (UserId, Hands)](tupleUserHands)
 
     val inGamePlayer: Gen[PlayersView] =
         for 
@@ -234,7 +239,7 @@ object WireSpecifications extends Properties("Wire"):
             bal <- mapPlayerBalance
             act <- mapPlayerActive
             cur <- userId
-            hnd <- hand
+            hnd <- hands
         yield InGamePlayer(idx, bal, act, cur, hnd)
 
     val playerCardReveal: Gen[PlayersView] =
@@ -242,7 +247,7 @@ object WireSpecifications extends Properties("Wire"):
             idx <- mapPlayerIndex
             bal <- mapPlayerBalance
             act <- mapPlayerActive
-            hnd <- mapPlayerHand
+            hnd <- mapPlayerHands
         yield PlayerCardReveal(idx, bal, act, hnd)
 
     val playersView: Gen[PlayersView] = oneOf(inGamePlayer, playerCardReveal)
@@ -261,7 +266,7 @@ object WireSpecifications extends Properties("Wire"):
     given Arbitrary[PlayersView] = Arbitrary(playersView)
     given Arbitrary[TableView] = Arbitrary(tableView)
     given Arbitrary[View] = Arbitrary(view)
-    given Arbitrary[Hand] = Arbitrary(hand)    
+    given Arbitrary[Hands] = Arbitrary(hands)    
     given Arbitrary[Card] = Arbitrary(card)
 
     property("choice wire encodes and decodes correctly for arbitrary choice") =
@@ -285,8 +290,8 @@ object WireSpecifications extends Properties("Wire"):
     property("view format wire encodes and decodes correctly for arbitrary view") =
         forAll { (view: View) => viewFormat.decode(viewFormat.encode(view)).get == view } 
 
-    property("hand wire encodes and decodes correctly for arbitrary hand") =
-        forAll { (hand: Hand) => HandWire.decode(HandWire.encode(hand)).get == hand } 
+    property("hands wire encodes and decodes correctly for arbitrary hand") =
+        forAll { (hands: Hands) => HandsWire.decode(HandsWire.encode(hands)).get == hands } 
 
     property("card wire encodes and decodes correctly for arbitrary card") =
         forAll { (card: Card) => CardWire.decode(CardWire.encode(card)).get == card }

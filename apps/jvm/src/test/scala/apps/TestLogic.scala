@@ -4,7 +4,7 @@ import cs214.webapp.*
 import cs214.webapp.{Action}
 import Card.*
 import Suit.*
-
+import Hands.*
 
 class TestLogic extends munit.FunSuite{
     var logique = Logic()

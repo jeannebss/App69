@@ -15,6 +15,7 @@ object Wire extends AppWire[Event, View]:
     import Phase.* 
     import PhaseView.*
     import PlayersView.*
+    import Hands.*
 
     object ChoiceWire extends WireFormat[Choice]:
         def encode(choice: Choice): Value =
@@ -90,15 +91,24 @@ object Wire extends AppWire[Event, View]:
             val obj = json.obj
             Card(IntWire.decode(obj("value")).get, StringWire.decode(obj("suit")).get)
 
-    object HandWire extends WireFormat[Hand]:
-        def encode(hand: Hand): Value =
-            Obj(
-                "first" -> CardWire.encode(hand.first),
-                "second" -> CardWire.encode(hand.second)
-            )
+    object HandsWire extends WireFormat[Hands]:
+        def encode(hands: Hands): Value =
+            hands match 
+                case EmptyHand => Obj("tag" -> "EmptyHand")
+                case Hand(first, second) =>
+                    Obj(
+                        "tag" -> "Hand",
+                        "first" -> CardWire.encode(first),
+                        "second" -> CardWire.encode(second)
+                    )
             
-        def decode(json: Value): Try[Hand] = Try:
-            Hand(CardWire.decode(json("first")).get, CardWire.decode(json("second")).get)
+        def decode(json: Value): Try[Hands] = Try:
+            json("tag").str match
+                case "EmptyHand" => EmptyHand
+                case "Hand" =>
+                    val first = CardWire.decode(json("first")).get
+                    val second = CardWire.decode(json("second")).get
+                    Hand(first, second)
 
     object PhaseViewWire extends WireFormat[PhaseView]:
         def encode(phaseView: PhaseView): Value =
@@ -162,7 +172,7 @@ object Wire extends AppWire[Event, View]:
                     "PlayerBalance" -> MapWire(StringWire, IntWire).encode(playerBalance),
                     "ActivePlayers" -> MapWire(StringWire, BooleanWire).encode(activePlayers),
                     "CurrentPlayer" -> StringWire.encode(currentPlayer),
-                    "Hand" -> HandWire.encode(hand)
+                    "Hand" -> HandsWire.encode(hand)
                 )
 
             case PlayerCardReveal(playerIndex, playerBalance, activePlayers, playerHands) =>
@@ -171,7 +181,7 @@ object Wire extends AppWire[Event, View]:
                     "PlayerIndex" -> MapWire(StringWire, IntWire).encode(playerIndex),
                     "PlayerBalance" -> MapWire(StringWire, IntWire).encode(playerBalance),
                     "ActivePlayers" -> MapWire(StringWire, BooleanWire).encode(activePlayers),
-                    "PlayerHands" -> MapWire(StringWire, HandWire).encode(playerHands)
+                    "PlayerHands" -> MapWire(StringWire, HandsWire).encode(playerHands)
                 )
         
         def decode(json: Value): Try[PlayersView] = Try:
@@ -181,14 +191,14 @@ object Wire extends AppWire[Event, View]:
                     val playerBalance = MapWire(StringWire, IntWire).decode(json("PlayerBalance")).get
                     val activePlayers = MapWire(StringWire, BooleanWire).decode(json("ActivePlayers")).get
                     val currentPlayer = StringWire.decode(json("CurrentPlayer")).get
-                    val hand = HandWire.decode(json("Hand")).get
+                    val hand = HandsWire.decode(json("Hand")).get
                     InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, hand)
 
                 case "PlayerCardReveal" =>
                     val playerIndex = MapWire(StringWire, IntWire).decode(json("PlayerIndex")).get
                     val playerBalance = MapWire(StringWire, IntWire).decode(json("PlayerBalance")).get
                     val activePlayers = MapWire(StringWire, BooleanWire).decode(json("ActivePlayers")).get
-                    val playerHands = MapWire(StringWire, HandWire).decode(json("PlayerHands")).get
+                    val playerHands = MapWire(StringWire, HandsWire).decode(json("PlayerHands")).get
                     PlayerCardReveal(playerIndex, playerBalance, activePlayers, playerHands)
                 
                 case _ => throw DecodingException("Not a valid players view!")
