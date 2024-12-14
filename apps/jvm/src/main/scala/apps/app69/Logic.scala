@@ -45,8 +45,8 @@ class Logic extends StateMachine[Event, GameState, View]:
     import app69.Hands.*
     override def init(clients: Seq[UserId]): GameState =
         PLAYERS = clients.toVector
-        if clients.size < 2 then
-            throw new IllegalMoveException("Not enough players")
+        if clients.size < 2 || clients.size > 5 then
+            throw IllegalMoveException("Not enough players")
         val allCards = RANDOM.shuffle(AllCards.apply)
         val dealerCards = allCards.take(5)
         val remainingCard = allCards.drop(5)
@@ -368,7 +368,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 val playerView = PlayerCardReveal(
                     indexes,
                     playerBalance,
-                    activePlayer,
+                    PLAYERS.map(player => (player, true)).toMap,
                     playerCards
                 )
                 View(phaseView, playerView, tableView)
@@ -378,7 +378,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 val playerView = PlayerCardReveal(
                     indexes,
                     playerBalance,
-                    activePlayer,
+                    PLAYERS.map(player => (player, true)).toMap,
                     playerCards
                 )
                 View(IsReady, playerView, tableView)
