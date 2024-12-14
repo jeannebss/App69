@@ -250,7 +250,7 @@ class TestLogic extends munit.FunSuite{
         assertEquals(playerBalance, Map(("Alexis" -> 890), ("Jeanne" -> 1820), ("Antoine" -> 1000), ("Jakub" -> 290), ("Guillaume" -> 1000)))
         assertEquals(poolValue, 0)
         assertEquals(phase, Phase.Reveal)
-        assertEquals(activePlayer, Map(("Alexis" -> true), ("Jeanne" -> true), ("Antoine" -> true), ("Jakub" -> true), ("Guillaume" -> true)))
+        assertEquals(activePlayer, Map(("Alexis" -> false), ("Jeanne" -> false), ("Antoine" -> false), ("Jakub" -> false), ("Guillaume" -> false)))
         assertEquals(smallBlind, "Jeanne")
         assertEquals(turnBets, Map(("Alexis" -> 0), ("Jeanne" -> 0), ("Antoine" -> 0), ("Jakub" -> 0), ("Guillaume" -> 0)))
 
@@ -306,7 +306,7 @@ class TestLogic extends munit.FunSuite{
         assertEquals(poolValue, 0)
         assertEquals(smallBlind, "Jeanne")
         assertEquals(currentPlayer, "Jeanne")
-        assertEquals(activePlayer,  Map(("Jeanne" -> true), ("Antoine" -> true), ("Jakub" -> true), ("Guillaume" -> true)))
+        assertEquals(activePlayer,  Map(("Jeanne" -> false), ("Antoine" -> false), ("Jakub" -> false), ("Guillaume" -> false)))
         assertEquals(turnBets, Map(("Jeanne" -> 0), ("Antoine" -> 0), ("Jakub" -> 0), ("Guillaume" -> 0)))
         assertEquals(highestBetter, "Jeanne")
 
