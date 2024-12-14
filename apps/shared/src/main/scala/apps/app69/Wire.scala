@@ -192,6 +192,8 @@ object Wire extends AppWire[Event, View]:
                     val activePlayers = MapWire(StringWire, BooleanWire).decode(json("ActivePlayers")).get
                     val playerHands = MapWire(StringWire, HandWire).decode(json("PlayerHands")).get
                     PlayerCardReveal(playerIndex, playerBalance, activePlayers, playerHands)
+                
+                case _ => throw DecodingException("Not a valid players view!")
         
     override object viewFormat extends WireFormat[View]:
         override def encode(view: View): Value =
