@@ -91,7 +91,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 choice match
                     case Check =>
                         //No player actions
-                        if (turnBets(userId) != highestBet)
+                        if (turnBets(userId) != highestBet || playerBalance.forall((id, money) => money != 0))
                             then throw IllegalMoveException("You cannot check")
                         
                         val updateCurrentPlayer = selectNextPlayer(activePlayer, (players.indexOf(currentPlayer)+1)%number)
@@ -121,7 +121,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val nextPlayerBalance = updatedPlayerBalance.filter((id, amount) => nextPlayers.contains(id))
 
-                            val nextActivePlayer = nextPlayers.map( _ -> false).toMap
+                            val nextActivePlayer = nextPlayers.map( _ -> true).toMap
 
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
                             val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind)+1)%players.size)
@@ -140,6 +140,10 @@ class Logic extends StateMachine[Event, GameState, View]:
                             Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextGamingState))
 
                     case Call =>
+
+                        if (!playerBalance.forall((id, money) => money == 0))
+                            then throw IllegalMoveException("You cannot Call")
+                            
                         //Modify all the balance
                         val diff = highestBet - turnBets(currentPlayer)
                         if (diff > playerBalance(userId))
