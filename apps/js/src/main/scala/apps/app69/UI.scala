@@ -255,24 +255,24 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                 padding: 0.5em;
             }
             #current-player {
-                margin-top:80%;
-                margin-left:45%;
+                top:80%;
+                left:45%;
             }
             #player0 {
-                margin-top:30%;
-                margin-left:10%;
+                top:30%;
+                left:10%;
             }
             #player1 {
-                margin-top:5%;
-                margin-left:75%;
+                top:5%;
+                left:75%;
             }
             #player2 {
-                margin-top:60%;
-                margin-left:5%	
+                top:60%;
+                left:5%	
             }
             #player3 {
-                margin-top:50%;
-                margin-left:85%;
+                top:50%;
+                left:85%;
             }
             .controls {
                 position: absolute;
