@@ -2,6 +2,7 @@ package apps
 package app69
 
 import cs214.webapp.UserId
+import app69.Hands.*
 
 enum HandValue:
     case High(value: Value)
@@ -33,28 +34,30 @@ object WinnerLogic:
         val groupCard = card.groupBy(_.value)
         groupCard.filter(_._2.size == num).keys.maxOption
 
-    def handValue(hand: Hand, dealer: List[Card]): HandValue = 
-            val set = dealer.toSet + hand._1 + hand._2 ++ (if hand.first.value == 14 then Set(Card(1, hand.first.suit)) else Set.empty) ++ (if hand.second.value == 14 then Set(Card(1, hand.second.suit)) else Set.empty)
-            if flush(set).isDefined then
-                (if straight(set.filter(_.suit == flush(set).get.suit)).isDefined then return HandValue.StraightFlush(straight(set.filter(_.suit == flush(set).get.suit)).get))
-                
-            if multi(4, set).isDefined then return HandValue.House(multi(4, set).get)
+    def handValue(hand: Hands, dealer: List[Card]): HandValue = 
+        hand match
+            case Hand(card1, card2) =>
+                val set = dealer.toSet + card1 + card2 ++ (if card1.value == 14 then Set(Card(1, card1.suit)) else Set.empty) ++ (if card2.value == 14 then Set(Card(1, card2.suit)) else Set.empty)
+                if flush(set).isDefined then
+                    (if straight(set.filter(_.suit == flush(set).get.suit)).isDefined then return HandValue.StraightFlush(straight(set.filter(_.suit == flush(set).get.suit)).get))
+                    
+                if multi(4, set).isDefined then return HandValue.House(multi(4, set).get)
 
-            if multi(3, set).isDefined then
-                if multi(2, set.filter(_.value != multi(3, set).get)).isDefined then return HandValue.Full(multi(3, set).get)
+                if multi(3, set).isDefined then
+                    if multi(2, set.filter(_.value != multi(3, set).get)).isDefined then return HandValue.Full(multi(3, set).get)
 
-            if flush(set).isDefined then return HandValue.Flush(flush(set).get.value)
+                if flush(set).isDefined then return HandValue.Flush(flush(set).get.value)
 
-            if straight(set).isDefined then return HandValue.Straight(straight(set).get)
+                if straight(set).isDefined then return HandValue.Straight(straight(set).get)
 
-            if multi(3, set).isDefined then return HandValue.Brelan(multi(3, set).get)
+                if multi(3, set).isDefined then return HandValue.Brelan(multi(3, set).get)
 
-            if multi(2, set).isDefined then
-                (if multi(2, set.filter(_.value != multi(2, set).get)).isDefined then return HandValue.DoublePair(multi(2, set).get)
-                else return HandValue.Pair(multi(2, set).get))
-                    else return HandValue.High(set.map(_.value).max)
+                if multi(2, set).isDefined then
+                    (if multi(2, set.filter(_.value != multi(2, set).get)).isDefined then return HandValue.DoublePair(multi(2, set).get)
+                    else return HandValue.Pair(multi(2, set).get))
+                        else return HandValue.High(set.map(_.value).max)
 
-    def winner(players: Map[UserId, Hand], dealer: List[Card], activePlayer: Map[UserId, Boolean]): Winners =
+    def winner(players: Map[UserId, Hands], dealer: List[Card], activePlayer: Map[UserId, Boolean]): Winners =
         val activeHand = players.filter((id, h) => activePlayer(id))
         val handValue: Map[UserId, HandValue] = activeHand.map(tup => (tup._1, WinnerLogic.handValue(tup._2, dealer)))
         val max = handValue.maxBy(_._2.ordinal)._2
