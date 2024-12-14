@@ -177,6 +177,17 @@ object WireSpecifications extends Properties("Wire"):
     val phaseView: Gen[PhaseView] =
         oneOf(const(ChoiceSelection), const(NotPlaying), choiceMade, winners, const(IsReady), end)
 
+    val value: Gen[Value] =
+        for
+            i <- choose(2, 14)
+        yield i
+    
+    val card: Gen[Card] =
+        for
+            v <- value
+            s <- suit
+        yield Card(v, s)
+    
     val cards: Gen[Vector[Card]] = Gen.containerOf[Vector, Card](card)
 
     val tableView: Gen[TableView] = 
@@ -193,17 +204,6 @@ object WireSpecifications extends Properties("Wire"):
         val diamond = const(Suit.Diamond)
         val club = const(Suit.Club)
         oneOf(spade, heart, diamond, club)
-
-    val value: Gen[Value] =
-        for
-            i <- choose(2, 14)
-        yield i
-
-    val card: Gen[Card] =
-        for
-            v <- value
-            s <- suit
-        yield Card(v, s)
 
     val hand: Gen[Hand] =
         for
