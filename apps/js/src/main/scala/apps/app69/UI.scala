@@ -17,6 +17,7 @@ import CardSymbols.back
 import PlayersView.*
 import Event.* 
 import org.scalajs.dom
+import scala.compiletime.ops.double
 
 
 @JSExportTopLevel("app69")
@@ -49,9 +50,7 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
         frag(
             h1(id :="name-of-page")("6poker9"),
             renderPhase(userId, view.phaseView),
-            div(cls := "all-table")(
-                renderTable(userId, view.tableView)
-            ),
+            div(cls := "all-table")(renderTable(userId, view.tableView)),
             renderPlayers(userId, view.playersView)
         )
 
@@ -109,29 +108,37 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
             case InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, hand) =>
                 frag(
                     renderUserId(userId, playerBalance(userId), hand, activePlayers(userId)),
-                    for user <- playerIndex.keys.filter(_ != userId) do
-                        renderOpponent(
-                            user, 
-                            playerIndex(user),
-                            playerBalance(user),
-                            activePlayers(user),
-                            user == currentPlayer, 
-                            Hand(Card(1,"♥️"),Card(1,"♥️"))
-                        )
+                    frag(
+                        playerIndex.keys.filter(_ != userId).toSeq.map{ user =>
+                            renderOpponent(
+                                user, 
+                                playerIndex(user),
+                                playerBalance(user),
+                                activePlayers(user),
+                                user == currentPlayer, 
+                                Hand(Card(14,"♥️"),Card(2,"♥️"))
+                            )
+                        }
+                    )
                 )
+                
             case PlayerCardReveal(playerIndex, playerBalance, activePlayers, playerHands) => 
                 frag(
                     renderUserId(userId, playerBalance(userId), playerHands(userId), activePlayers(userId)),
-                    for user <- playerIndex.keys.filter(_ != userId) do
-                        renderOpponent(
-                            user,
-                            playerIndex(user),
-                            playerBalance(user),
-                            activePlayers(user),
-                            false,
-                            playerHands(user)
-                        )
+                    frag(
+                        playerIndex.keys.filter(_ != userId).toSeq.map { user =>
+                            renderOpponent(
+                                user,
+                                playerIndex(user),
+                                playerBalance(user),
+                                activePlayers(user),
+                                false,
+                                playerHands(user)
+                            )
+                        }
+                    )
                 )
+                
 
     def renderUserId(userId : UserId, balance: Balance, hand: Hand, stillInGame: Boolean): Frag = 
         frag(
@@ -154,20 +161,21 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
 
     def renderTable(userId: UserId, tableView: TableView): Frag =
         frag(
-            div(cls := "center-table")(
-                renderDealerCards(tableView.dealerCards),
-                div(cls := "amount-in-pool")("Amount in the pool: ", tableView.poolBalance," CHF")),
-                div(cls := "pot")(span(cls := "money")("💰"))
+            div(cls := "center-table")(renderDealerCards(tableView.dealerCards),
+            div(cls := "amount-in-pool")("Amount in the pool: ", tableView.poolBalance," CHF")),
+            div(cls := "pot")(span(cls := "money")("💰"))
         )
 
     def renderHand(hand: Hand, front: Boolean, stillInGame: Boolean): Frag =
-        if front && stillInGame then frag(
-            div(cls := "cards")(CardSymbols(hand.first) + CardSymbols(hand.second))
-        ) else if stillInGame  then 
+        if front && stillInGame then 
+            frag(div(cls := "cards")(CardSymbols(hand.first) + CardSymbols(hand.second))) 
+        else if stillInGame then 
             frag(
                 div(cls := "cards")(CardSymbols.back * 2)
             )
-        else frag()
+        else {
+            frag()
+        }
     
     def renderDealerCards(dealerCards: Vector[Card]): Frag =
         frag(
