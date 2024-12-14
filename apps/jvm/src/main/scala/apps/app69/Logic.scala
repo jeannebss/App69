@@ -352,7 +352,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 View(phaseView, playersView, tableView)
 
-            case CardReveal | Reveal =>
+            case CardReveal =>
                 val maxBalance = playerBalance.values.max
                 val phaseView = Winners(playerBalance.filter(_._2 == maxBalance).keys.toVector)
                 val tableView = TableView(dealerCards.toVector, poolValue)
@@ -363,6 +363,16 @@ class Logic extends StateMachine[Event, GameState, View]:
                     playerCards
                 )
                 View(phaseView, playerView, tableView)
+
+            case Reveal =>
+                val tableView = TableView(dealerCards.toVector, poolValue)
+                val playerView = PlayerCardReveal(
+                    indexes,
+                    playerBalance,
+                    activePlayer,
+                    playerCards
+                )
+                View(IsReady, playerView, tableView)
 
             case EndGame => 
                 throw new IllegalMoveException("Not implemented yey!")
