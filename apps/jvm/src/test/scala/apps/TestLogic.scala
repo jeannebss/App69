@@ -360,4 +360,24 @@ class TestLogic extends munit.FunSuite{
         assert((dealerCards1 != dealerCards2))
         assert(playerCards1 != playerCards2)
 
+    test("UI doesn't show what the logic sends"):
+        def updateGameState(player: String, choice: Choice): GameState = 
+            val action = logique.transition(gameState)(player, Event.PlayerAction(choice)).get(2)
+            action match 
+                case Action.Render(st) => st
+                case _ => throw new IllegalStateException("Unexpected action type")
+
+        gameState = logique.init(Seq("Guillaume", "Alexis", "Jakub"))
+
+        gameState = updateGameState("Alexis", Choice.Raise(990))
+        gameState = updateGameState("Jakub", Choice.Call)
+        gameState = updateGameState("Guillaume", Choice.Fold)
+
+        val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = gameState
+
+        assertEquals(phase, Phase.Reveal)
+
+
+        
+
 }

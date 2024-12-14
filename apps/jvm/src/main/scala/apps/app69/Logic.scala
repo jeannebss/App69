@@ -302,7 +302,6 @@ class Logic extends StateMachine[Event, GameState, View]:
                 if playersReady.forall((k, v) => v) then Seq(Action.Pause(1000), Action.Render(init(PLAYERS.toSeq)))
                 else Seq(Action.Render(state.copy(activePlayer = playersReady)))
                     
-                                
             case (_) => throw IllegalMoveException("Unsupported phase")
 
     override def project(state: GameState)(userId: UserId): View =
