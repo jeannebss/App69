@@ -34,6 +34,8 @@ class Logic extends StateMachine[Event, GameState, View]:
 
     private val SMALL_BLIND = 10
 
+    private var PLAYERS = Vector[UserId]()
+
     import app69.Phase.* 
     import app69.Event.*
     import app69.Choice.* 
@@ -42,6 +44,7 @@ class Logic extends StateMachine[Event, GameState, View]:
     import app69.PlayersView.*
     import app69.Hands.*
     override def init(clients: Seq[UserId]): GameState =
+        PLAYERS = clients.toVector
         if clients.size < 2 then
             throw new IllegalMoveException("Not enough players")
         val allCards = RANDOM.shuffle(AllCards.apply)
@@ -91,7 +94,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 choice match
                     case Check =>
                         //No player actions
-                        if (turnBets(userId) != highestBet)
+                        if (turnBets(userId) != highestBet || playerBalance.forall((id, money) => money != 0))
                             then throw IllegalMoveException("You cannot check")
                         
                         val updateCurrentPlayer = selectNextPlayer(activePlayer, (players.indexOf(currentPlayer)+1)%number)
@@ -121,7 +124,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val nextPlayerBalance = updatedPlayerBalance.filter((id, amount) => nextPlayers.contains(id))
 
-                            val nextActivePlayer = nextPlayers.map( _ -> false).toMap
+                            val nextActivePlayer = nextPlayers.map( _ -> true).toMap
 
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
                             val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind)+1)%players.size)
@@ -140,6 +143,10 @@ class Logic extends StateMachine[Event, GameState, View]:
                             Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextGamingState))
 
                     case Call =>
+
+                        if (!playerBalance.forall((id, money) => money == 0))
+                            then throw IllegalMoveException("You cannot Call")
+
                         //Modify all the balance
                         val diff = highestBet - turnBets(currentPlayer)
                         if (diff > playerBalance(userId))
