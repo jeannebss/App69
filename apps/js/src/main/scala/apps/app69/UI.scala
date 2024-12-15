@@ -94,7 +94,6 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
      */
     def renderPhase(phaseView: PhaseView): Frag = 
         phaseView match
-
             //render the buttons for the user to make a choice
             case ChoiceSelection =>
                 frag(
@@ -212,7 +211,7 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
             case PlayerCardReveal(playerIndex, playerBalance, activePlayers, playerHands) => 
                 frag(
                     //render the user
-                    renderUserId(playerBalance(userId), playerHands(userId),0, activePlayers(userId)),
+                    renderUserId(playerBalance(userId), playerHands(userId), 0, activePlayers(userId)),
                     //render the opponents
                     frag(
                         playerIndex.keys.filter(_ != userId).toSeq.map { user =>
@@ -229,7 +228,6 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                     )
                 )
                 
-    
     /**
       * Render the user
       * Calls the renderHand method to render the hand of the user
@@ -265,7 +263,7 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
      */
     def renderOpponent(opponent : UserId, idOfPlayer: Int, turnBet: Balance, balance: Balance, stillInGame: Boolean, isCurrentPlayer: Boolean, hand: Hands): Frag =
         //if the opponent is the current player, add a green dot next to the name
-        val nameOfPlayer = if isCurrentPlayer then (opponent +"🟢") else opponent
+        val nameOfPlayer = if isCurrentPlayer then (opponent + "🟢") else opponent
         frag(
             div(cls := "player", id := s"player$idOfPlayer")(
                 div(cls := "player-name")(nameOfPlayer),
