@@ -359,8 +359,8 @@ class Logic extends StateMachine[Event, GameState, View]:
                 View(phaseView, playersView, tableView)
 
             case CardReveal =>
-                val maxBalance = playerBalance.values.max
-                val phaseView = Winners(playerBalance.filter(_._2 == maxBalance).keys.toVector)
+                val maxBet = turnBets.values.max
+                val phaseView = Winners(turnBets.filter(_._2 == maxBet).keys.toVector)
                 val tableView = TableView(dealerCards.toVector, poolValue)
                 val playerView = PlayerCardReveal(
                     indexes,
