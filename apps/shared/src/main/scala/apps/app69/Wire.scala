@@ -115,17 +115,22 @@ object Wire extends AppWire[Event, View]:
             phaseView match
                 case ChoiceSelection => Obj("tag" -> "ChoiceSelection")
                 case NotPlaying => Obj("tag" -> "NotPlaying")
-                case ChoiceMade(choice: Choice) => 
+                case ChoiceMade(choice, player) => 
                     Obj(
                         "tag" -> "ChoiceMade",
-                        "Choice" -> ChoiceWire.encode(choice)
+                        "Choice" -> ChoiceWire.encode(choice),
+                        "Player" -> StringWire.encode(player)
                     )
                 case Winners(winners) =>
                     Obj(
                         "tag" -> "Winners",
                         "Winners" -> VectorWire(StringWire).encode(winners)
                     )
-                case IsReady => Obj("tag" -> "IsReady")
+                case IsReady(ready) => 
+                    Obj(
+                        "tag" -> "IsReady",
+                        "Ready" -> BooleanWire.encode(ready)
+                    )
                 case End(winners, balance) =>
                     Obj(
                         "tag" -> "End",
@@ -139,11 +144,14 @@ object Wire extends AppWire[Event, View]:
                 case "NotPlaying" => NotPlaying
                 case "ChoiceMade" =>
                     val choice = ChoiceWire.decode(json("Choice")).get
-                    ChoiceMade(choice)
+                    val player = StringWire.decode(json("Player")).get
+                    ChoiceMade(choice, player)
                 case "Winners" =>
                     val winners = VectorWire(StringWire).decode(json("Winners")).get
                     Winners(winners)
-                case "IsReady" => IsReady
+                case "IsReady" => 
+                    val ready = BooleanWire.decode(json("Ready")).get
+                    IsReady(ready)
                 case "End" =>
                     val winners = VectorWire(StringWire).decode(json("Winners")).get
                     val balance = IntWire.decode(json("Balance")).get

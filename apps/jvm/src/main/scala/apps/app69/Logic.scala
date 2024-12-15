@@ -26,7 +26,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
     override val wire = Wire
 
-    private val END_ROUND_PAUSE_MS = 6000
+    private val END_ROUND_PAUSE_MS = 5000
 
     private val RANDOM = new Random()
 
@@ -347,7 +347,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 View(phaseView, playersView, tableView)
             
             case PlayerChoice(turn, choice) =>
-                val phaseView = ChoiceMade(choice)
+                val phaseView = ChoiceMade(choice, currentPlayer)
                 val tableView = TableView(
                     dealerCards.take(numberOfCard(turn)).toVector,
                     poolValue
@@ -382,7 +382,17 @@ class Logic extends StateMachine[Event, GameState, View]:
                     PLAYERS.map(player => (player, true)).toMap,
                     playerCards
                 )
-                View(IsReady, playerView, tableView)
+                View(IsReady(activePlayer(userId)), playerView, tableView)
 
             case EndGame => 
-                throw new IllegalMoveException("Not implemented yey!")
+                val tableView = TableView(dealerCards.toVector, poolValue)
+                val playerView = PlayerCardReveal(
+                    indexes,
+                    playerBalance,
+                    PLAYERS.map(player => (player, true)).toMap,
+                    playerCards
+                )
+                val maxBalance = playerBalance.values.max
+                val winners = playerBalance.filter(_._2 == maxBalance).keys.toVector
+                val phaseView = End(winners, maxBalance)
+                View(phaseView, playerView, tableView)

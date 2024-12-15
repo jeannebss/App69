@@ -63,9 +63,9 @@ class WireTest extends munit.FunSuite:
         val phaseView = Seq(
             ChoiceSelection,
             NotPlaying,
-            ChoiceMade(Raise(20)),
+            ChoiceMade(Raise(20), "user2"),
             Winners(Vector("user1", "user2", "user3")),
-            IsReady,
+            IsReady(true),
             End(Vector("user1", "user2"), 200)
         )
         for pV <- phaseView do
@@ -157,13 +157,14 @@ object WireSpecifications extends Properties("Wire"):
 
     val phase: Gen[Phase] =
         oneOf(inGame, playerChoice, const(CardReveal), const(Reveal), const(EndGame))
+
+    val userId: Gen[UserId] = Arbitrary.arbitrary[String]
     
     val choiceMade: Gen[PhaseView] =
         for
             c <- choice
-        yield ChoiceMade(c)
-
-    val userId: Gen[UserId] = Arbitrary.arbitrary[String]
+            u <- userId
+        yield ChoiceMade(c, u)
 
     val players: Gen[Vector[UserId]] = Gen.containerOf[Vector, UserId](userId)
     val balance: Gen[Balance] = Arbitrary.arbitrary[Int]
@@ -179,8 +180,13 @@ object WireSpecifications extends Properties("Wire"):
             b <- balance
         yield End(w, b)
 
+    val isReady: Gen[PhaseView] =
+        for
+            b <- oneOf(true, false)
+        yield IsReady(b)
+
     val phaseView: Gen[PhaseView] =
-        oneOf(const(ChoiceSelection), const(NotPlaying), choiceMade, winners, const(IsReady), end)
+        oneOf(const(ChoiceSelection), const(NotPlaying), choiceMade, winners, isReady, end)
 
     val value: Gen[Value] =
         for

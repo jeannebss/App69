@@ -99,9 +99,9 @@ case class View(
 enum PhaseView:
     case ChoiceSelection
     case NotPlaying
-    case ChoiceMade(choice: Choice)
+    case ChoiceMade(choice: Choice, player: UserId)
     case Winners(winners: Vector[UserId])
-    case IsReady
+    case IsReady(ready: Boolean)
     case End(winners: Vector[UserId], balance: Balance)
 
 case class TableView(
@@ -135,3 +135,9 @@ enum Choice:
     case Call 
     case Fold
     case Raise(value: Bet)
+
+    override def toString(): String = this match
+        case Check => "checked"
+        case Call => "called"
+        case Fold => "folded"
+        case Raise(value) => s"raised to ${value}"
