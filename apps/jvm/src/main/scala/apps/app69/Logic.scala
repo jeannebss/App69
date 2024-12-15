@@ -283,8 +283,8 @@ class Logic extends StateMachine[Event, GameState, View]:
                                                     dealerCards = newDealerCards,
                                                     playerCards = newPlayerCards,
                                                     currentPlayer = selectNextPlayer(newActivePlayer, (players.indexOf(smallBlind) + 1)%players.size),
-                                                    playerBalance = playerBalance.updated(userId, playerBalance(userId) - SMALL_BLIND),
-                                                    turnBets = turnBets.updated(userId, SMALL_BLIND),
+                                                    playerBalance = playerBalance.updated(smallBlind, playerBalance(smallBlind) - SMALL_BLIND),
+                                                    turnBets = turnBets.updated(smallBlind, SMALL_BLIND),
                                                     phase = InGame(0))
                     Seq(Action.Pause(1000), Action.Render(newGameState))
                 else
