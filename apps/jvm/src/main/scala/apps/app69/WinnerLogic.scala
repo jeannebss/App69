@@ -77,7 +77,7 @@ object WinnerLogic:
      * @param dealer The dealer's cards.
      * @return The determined `HandValue` for the player's hand.
      */
-    def handValue(hand: Hands, dealer: List[Card]): HandValue =
+    def handValue(hand: Hands, dealer: List[Card]): HandValue = 
         require(dealer.size == 5) 
         hand match
             case Hand(card1, card2) =>
@@ -110,14 +110,14 @@ object WinnerLogic:
      * @param activePlayer A map of player IDs to their active status in the game.
      * @return A set of user IDs representing the winners.
      */
-    def winner(players: Map[UserId, Hands], dealer: List[Card], activePlayer: Map[UserId, Boolean]): Winners =
+    def winner(players: Map[UserId, Hands], dealer: List[Card], activePlayer: Map[UserId, Boolean]): Winners = {
         require(dealer.size == 5)
 
         val activeHand = players.filter((id, h) => activePlayer(id))
         val handValue: Map[UserId, HandValue] = activeHand.map(tup => (tup._1, WinnerLogic.handValue(tup._2, dealer)))
         val maxHandValue = handValue.maxBy(_._2.ordinal)._2
         val upper = handValue.filter(tup => tup._2.ordinal == maxHandValue.ordinal)
-        val test = upper.map((player, hand) => hand match
+        val topHands = upper.map((player, hand) => hand match
             case HandValue.High(value) => (player, value)
             case HandValue.Pair(value) => (player, value)
             case HandValue.DoublePair(value) => (player, value)
@@ -128,6 +128,9 @@ object WinnerLogic:
             case HandValue.House(value) => (player, value)
             case HandValue.StraightFlush(value) => (player, value)
         )
-        val maxValueInHand = test.maxBy(_._2)._2
-        test.filter((player, value) => value == maxValueInHand).keys.toSet
+        val maxValueInHand = topHands.maxBy(_._2)._2
+        topHands.filter((player, value) => value == maxValueInHand).keys.toSet
+
+    }.ensuring(winners => winners.size > 0 && winners.size < 5)
+        
 
