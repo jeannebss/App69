@@ -26,7 +26,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
     override val wire = Wire
 
-    private val END_ROUND_PAUSE_MS = 2000
+    private val END_ROUND_PAUSE_MS = 6000
 
     private val RANDOM = new Random()
 
@@ -341,6 +341,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                     playerBalance,
                     activePlayer,
                     currentPlayer,
+                    turnBets,
                     playerCards(userId)
                 )
                 View(phaseView, playersView, tableView)
@@ -356,6 +357,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                     playerBalance,
                     activePlayer,
                     currentPlayer,
+                    turnBets,
                     playerCards(userId)
                 )
                 View(phaseView, playersView, tableView)

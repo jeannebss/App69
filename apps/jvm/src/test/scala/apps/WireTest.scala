@@ -93,8 +93,9 @@ class WireTest extends munit.FunSuite:
         val balances = Map("user1" -> 100, "user2" -> 200)
         val active = Map("user1" -> true, "user2" -> false)
         val current = "user2"
+        val bets = Map("user1" -> 10, "user2" -> 20)
         val hands = Map("user1" -> Hand(Card(6,"♥️"), Card(9,"♥️")), "user2" -> Hand(Card(7,"♥️"), Card(12,"♠️")))
-        val inGame = InGamePlayer(indexes, balances, active, current, hands("user2"))
+        val inGame = InGamePlayer(indexes, balances, active, current, bets, hands("user2"))
         assertEquals(PlayersViewWire.decode(PlayersViewWire.encode(inGame)).get, inGame)
         val cardReveal = PlayerCardReveal(indexes, balances, active, hands)
         assertEquals(PlayersViewWire.decode(PlayersViewWire.encode(cardReveal)).get, cardReveal)
@@ -107,10 +108,11 @@ class WireTest extends munit.FunSuite:
         val current = "user2"
         val cards = Vector(Card(14,"♥️"), Card(7,"♥️"), Card(12,"♠️"))
         val balance = 300
+        val bets = Map("user1" -> 10, "user2" -> 20)
         val hands = Map("user1" -> Hand(Card(6,"♥️"), Card(9,"♥️")), "user2" -> Hand(Card(7,"♥️"), Card(12,"♠️")))
         val view = View(
             phaseView = ChoiceSelection,
-            playersView = InGamePlayer(indexes, balances, active, current, hands("user2")),
+            playersView = InGamePlayer(indexes, balances, active, current, bets, hands("user2")),
             TableView(cards, balance)
         )
         val res = viewFormat.decode(viewFormat.encode(view)).get
@@ -220,6 +222,7 @@ object WireSpecifications extends Properties("Wire"):
     val tupleUserBalance: Gen[(UserId, Balance)] = Gen.zip(userId, balance)
     val tupleUserBoolean: Gen[(UserId, Boolean)] = Gen.zip(userId, oneOf(true, false))
     val tupleUserHands: Gen[(UserId, Hands)] = Gen.zip(userId, hands)
+    val tupleUserBet: Gen[(UserId, Bet)] = Gen.zip(userId, Arbitrary.arbitrary[Int])
 
     val mapPlayerIndex: Gen[Map[UserId, Int]] = 
         Gen.buildableOf[Map[UserId, Int], (UserId, Int)](tupleUserIndex)
@@ -233,14 +236,18 @@ object WireSpecifications extends Properties("Wire"):
     val mapPlayerHands: Gen[Map[UserId, Hands]] = 
         Gen.buildableOf[Map[UserId, Hands], (UserId, Hands)](tupleUserHands)
 
+    val mapPlayerBet: Gen[Map[UserId, Bet]] =
+        Gen.buildableOf[Map[UserId, Bet], (UserId, Bet)](tupleUserBet)
+
     val inGamePlayer: Gen[PlayersView] =
         for 
             idx <- mapPlayerIndex
             bal <- mapPlayerBalance
             act <- mapPlayerActive
             cur <- userId
+            bet <- mapPlayerBet
             hnd <- hands
-        yield InGamePlayer(idx, bal, act, cur, hnd)
+        yield InGamePlayer(idx, bal, act, cur, bet, hnd)
 
     val playerCardReveal: Gen[PlayersView] =
         for

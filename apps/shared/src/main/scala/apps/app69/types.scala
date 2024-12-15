@@ -115,6 +115,7 @@ enum PlayersView:
         playerBalance: Map[UserId, Balance],
         activePlayers: Map[UserId, Boolean],
         currentPlayer: UserId,
+        turnBets: Map[UserId, Bet],
         hand: Hands
     )
     case PlayerCardReveal(

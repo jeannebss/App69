@@ -165,13 +165,14 @@ object Wire extends AppWire[Event, View]:
     
     object PlayersViewWire extends WireFormat[PlayersView]:
         def encode(playersView: PlayersView): Value = playersView match
-            case InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, hand) =>
+            case InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, turnBets, hand) =>
                 Obj(
                     "tag" -> "InGamePlayer",
                     "PlayerIndex" -> MapWire(StringWire, IntWire).encode(playerIndex),
                     "PlayerBalance" -> MapWire(StringWire, IntWire).encode(playerBalance),
                     "ActivePlayers" -> MapWire(StringWire, BooleanWire).encode(activePlayers),
                     "CurrentPlayer" -> StringWire.encode(currentPlayer),
+                    "TurnBets" -> MapWire(StringWire, IntWire).encode(turnBets),
                     "Hand" -> HandsWire.encode(hand)
                 )
 
@@ -191,8 +192,9 @@ object Wire extends AppWire[Event, View]:
                     val playerBalance = MapWire(StringWire, IntWire).decode(json("PlayerBalance")).get
                     val activePlayers = MapWire(StringWire, BooleanWire).decode(json("ActivePlayers")).get
                     val currentPlayer = StringWire.decode(json("CurrentPlayer")).get
+                    val turnBets = MapWire(StringWire, IntWire).decode(json("TurnBets")).get
                     val hand = HandsWire.decode(json("Hand")).get
-                    InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, hand)
+                    InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, turnBets, hand)
 
                 case "PlayerCardReveal" =>
                     val playerIndex = MapWire(StringWire, IntWire).decode(json("PlayerIndex")).get

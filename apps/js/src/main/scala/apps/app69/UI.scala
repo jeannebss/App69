@@ -107,7 +107,7 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
 
     def renderPlayers(userId: UserId, playersView: PlayersView): Frag = 
         playersView match
-            case InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, hand) =>
+            case InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, turnBets, hand) =>
                 frag(
                     renderUserId(userId, playerBalance(userId), hand, activePlayers(userId)),
                     frag(
