@@ -77,7 +77,8 @@ object WinnerLogic:
      * @param dealer The dealer's cards.
      * @return The determined `HandValue` for the player's hand.
      */
-    def handValue(hand: Hands, dealer: List[Card]): HandValue = 
+    def handValue(hand: Hands, dealer: List[Card]): HandValue =
+        require(dealer.size == 5) 
         hand match
             case Hand(card1, card2) =>
                 val set = dealer.toSet + card1 + card2 ++ (if card1.value == 14 then Set(Card(1, card1.suit)) else Set.empty) ++ (if card2.value == 14 then Set(Card(1, card2.suit)) else Set.empty)
@@ -110,7 +111,10 @@ object WinnerLogic:
      * @return A set of user IDs representing the winners.
      */
     def winner(players: Map[UserId, Hands], dealer: List[Card], activePlayer: Map[UserId, Boolean]): Winners =
+        require(dealer.size == 5)
+
         val activeHand = players.filter((id, h) => activePlayer(id))
         val handValue: Map[UserId, HandValue] = activeHand.map(tup => (tup._1, WinnerLogic.handValue(tup._2, dealer)))
         val max = handValue.maxBy(_._2.ordinal)._2
-        handValue.filter(tup => tup._2 == max).keys.toSet
+        handValue.filter(tup => tup._2.ordinal == max.ordinal).keys.toSet
+        

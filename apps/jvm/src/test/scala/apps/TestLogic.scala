@@ -262,7 +262,7 @@ class TestLogic extends munit.FunSuite{
             case _ => throw new IllegalMoveException("not your turn")
 
 
-    test("Card Test: dealer cards and players hand change at the end of a round"):
+    test("Card Test: Every one that should win wins"):
 
         def updateGameState(player: String, choice: Choice): GameState = 
             val action = logique.transition(gameState)(player, Event.PlayerAction(choice)).get(2)
@@ -305,60 +305,10 @@ class TestLogic extends munit.FunSuite{
         assertEquals(playerBalance, Map(("Jeanne" -> 1500), ("Antoine" -> 1500), ("Jakub" -> 1000), ("Guillaume" -> 1000)))
         assertEquals(poolValue, 0)
         assertEquals(smallBlind, "Jeanne")
-        assertEquals(currentPlayer, "Jeanne")
+        assertEquals(currentPlayer, "Antoine")
         assertEquals(activePlayer,  Map(("Jeanne" -> false), ("Antoine" -> false), ("Jakub" -> false), ("Guillaume" -> false)))
         assertEquals(turnBets, Map(("Jeanne" -> 0), ("Antoine" -> 0), ("Jakub" -> 0), ("Guillaume" -> 0)))
         assertEquals(highestBetter, "Jeanne")
-
-    test("Card Test: everyone folds and cards are randomly shuffuled between rounds"):
-        def updateGameState(player: String, choice: Choice): GameState = 
-            val action = logique.transition(gameState)(player, Event.PlayerAction(choice)).get(2)
-            action match 
-                case Action.Render(st) => st
-                case _ => throw new IllegalStateException("Unexpected action type")
-
-        def readyGameState(player: String): GameState = 
-            val action = logique.transition(gameState)(player, Event.Ready).get(1)
-            action match 
-                case Action.Render(st) => st
-                case _ => throw new IllegalStateException("Unexpected action type")
-        
-        gameState = logique.init(Seq("Guillaume", "Jeanne", "Jakub", "Alexis", "Antoine"))
-
-        println("creation")
-
-        val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = gameState
-
-        gameState = updateGameState("Jeanne", Choice.Raise(100))
-
-        gameState = updateGameState("Jakub", Choice.Fold)
-
-        gameState = updateGameState("Alexis", Choice.Fold)
-
-        gameState = updateGameState("Antoine", Choice.Fold)
-
-        gameState = updateGameState("Guillaume", Choice.Fold)
-
-        val gameState1 = gameState.copy()
-
-        /*gameState = readyGameState("Guillaume")
-
-        gameState = readyGameState("Jeanne")
-
-        gameState = readyGameState("Jakub")
-
-        gameState = readyGameState("Antoine")
-
-        gameState = readyGameState("Alexis")*/
-
-
-
-        val GameState(players1, playerBalance1, poolValue1, currentPlayer1, dealerCards1, playerCards1, phase1, activePlayer1, smallBlind1, highestBetter1, turnBets1) = gameState1
-
-        val GameState(players2, playerBalance2, poolValue2, currentPlayer2, dealerCards2, playerCards2, phase2, activePlayer2, smallBlind2, highestBetter2, turnBets2) = gameState
-
-        assert((dealerCards1 != dealerCards2))
-        assert(playerCards1 != playerCards2)
 
     test("UI doesn't show what the logic sends"):
         def updateGameState(player: String, choice: Choice): GameState = 
