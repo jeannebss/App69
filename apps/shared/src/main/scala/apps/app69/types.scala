@@ -123,11 +123,12 @@ object AllCards:
       *
       * @return deck of all possible cards
       */
-    def apply: List[Card] =
-        (for
-            value <- Value.AllValues
-            suit <- Suit.AllSuits
-        yield Card(value, suit)).toList
+    def apply: List[Card] = {
+      (for
+          value <- Value.AllValues
+          suit <- Suit.AllSuits
+      yield Card(value, suit)).toList
+    }.ensuring(deck => deck.size == 52)
 
 /**
   * Hand represents the two cards of a player in a game.
