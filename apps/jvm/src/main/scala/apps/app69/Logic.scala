@@ -85,7 +85,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 }
 
                 val highestBet = turnBets.values.max
-                //Check the highest amount you can raise(Not sure)
+                //Check the highest amount you can raise
                 val raiseCapacity = playerBalance.filter((k, v) => activePlayer(k)).map((k, v) => v - (highestBet - turnBets(k)))
                 val maxRaise = raiseCapacity.min
 
@@ -119,18 +119,18 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val nextPlayers = players.filter(id => updatedPlayerBalance(id) > 0)
 
-                            val nextPlayerBalance = updatedPlayerBalance.filter((id, amount) => nextPlayers.contains(id))
+                            val nextPlayerBalance = updatedPlayerBalance.filter((id, amount) => amount > 0)
 
                             val nextActivePlayer = nextPlayers.map( _ -> false).toMap
 
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
-                            val nextCurrentPlayer = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind)+1)%players.size)
                             val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind)+1)%players.size)
+                            val nextEndCurrentPlayer = selectNextPlayer(nextActiveBlind, (players.indexOf(nextSmallBlind)+1)%players.size)
 
                             
-                            val showCardPhase = state.copy(phase = CardReveal(winner.toVector), playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer)
+                            val showCardPhase = state.copy(phase = CardReveal(winner.toVector), playerBalance = updatedPlayerBalance)
 
-                            val nextState = state.copy(currentPlayer = nextCurrentPlayer, phase = nextPhase, playerBalance = nextPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = nextPlayers.map(_ -> 0).toMap, highestBetter = nextSmallBlind)
+                            val nextState = state.copy(currentPlayer = nextEndCurrentPlayer, phase = Reveal, playerBalance = nextPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = nextPlayers.map(_ -> 0).toMap, highestBetter = nextSmallBlind)
                             
                             Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
                         else
@@ -141,7 +141,6 @@ class Logic extends StateMachine[Event, GameState, View]:
                             Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextGamingState))
 
                     case Call =>
-
                         if (turnBets.forall((id, money) => money == 0))
                             then throw IllegalMoveException("You cannot Call")
 
@@ -176,22 +175,22 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val nextPlayers = players.filter(id => updatedPlayerBalance(id) > 0)
 
-                            val futurPlayerBalance = updatedPlayerBalance.filter((id, amount) => nextPlayers.contains(id))
+                            val futurPlayerBalance = updatedPlayerBalance.filter((id, amount) => amount>0)
 
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
-                            val nextCurrentPlayer = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind) + 1)%players.size)
                             val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind) + 1)%players.size)
+                            val nextEndCurrentPlayer = selectNextPlayer(nextActiveBlind, (players.indexOf(nextSmallBlind) + 1)%players.size)
 
                             val nextActivePlayer = nextPlayers.map( _ -> false).toMap
                             
-                            val showCardPhase = state.copy(phase = CardReveal(winner.toVector), playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer)
+                            val showCardPhase = state.copy(phase = CardReveal(winner.toVector), playerBalance = updatedPlayerBalance)
 
-                            val nextState = state.copy(currentPlayer = nextSmallBlind, phase = nextPhase, playerBalance = futurPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = nextPlayers.map(_ -> 0).toMap, highestBetter = nextSmallBlind)
+                            val nextState = state.copy(currentPlayer = nextEndCurrentPlayer, phase = nextPhase, playerBalance = futurPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = nextPlayers.map(_ -> 0).toMap, highestBetter = nextSmallBlind)
                             
                             Seq(Action.Render(showCardPhase), Action.Pause(5000), Action.Render(nextState))
                         else
                             val viewingPhase = PlayerChoice(turn, choice)
-                            val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet) 
+                            val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet, playerBalance = nextPlayerBalance) 
                             val nextHighestBetter = if turnOver then selectNextPlayer(activePlayer, players.indexOf(smallBlind)) else highestBetter
                             val nextState = state.copy(playerBalance = nextPlayerBalance, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
                             Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
@@ -270,10 +269,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 val newActivePlayer = activePlayer.updated(userId, true)
 
                 if (newActivePlayer.size == 1) then Seq(Action.Pause(1000), Action.Render(state.copy(phase = EndGame, activePlayer = PLAYERS.map(_ -> false).toMap)))
-                else 
-
-                 
-                if newActivePlayer.forall((k,v) => v) then
+                else if newActivePlayer.forall((k,v) => v) then
 
                     val newAllCards = RANDOM.shuffle(AllCards.apply)
                     val newDealerCards = newAllCards.take(5)
