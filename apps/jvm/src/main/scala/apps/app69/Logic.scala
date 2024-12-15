@@ -46,7 +46,7 @@ class Logic extends StateMachine[Event, GameState, View]:
     override def init(clients: Seq[UserId]): GameState =
         PLAYERS = clients.toVector
         if clients.size < 2 || clients.size > 5 then
-            throw IllegalMoveException("Not enough players")
+            throw IllegalMoveException("You need to have between 2 and 5 players")
         val allCards = RANDOM.shuffle(AllCards.apply)
         val dealerCards = allCards.take(5)
         val remainingCard = allCards.drop(5)
@@ -92,7 +92,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 choice match
                     case Check =>
                         //No player actions
-                        if (turnBets(userId) != highestBet || turnBets.forall((id, money) => money != 0))
+                        if (turnBets(userId) != highestBet)
                             then throw IllegalMoveException("You cannot check")
                         
                         val updateCurrentPlayer = selectNextPlayer(activePlayer, (players.indexOf(currentPlayer)+1)%number)
@@ -125,7 +125,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
                             val nextCurrentPlayer = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind)+1)%players.size)
-                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind))%players.size)
+                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind)+1)%players.size)
 
                             
                             val showCardPhase = state.copy(phase = CardReveal(winner.toVector), playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer)
@@ -180,7 +180,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
                             val nextCurrentPlayer = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind) + 1)%players.size)
-                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind))%players.size)
+                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind) + 1)%players.size)
 
                             val nextActivePlayer = nextPlayers.map( _ -> false).toMap
                             
@@ -230,8 +230,8 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextPlayerBalance = updatedPlayerBalance.filter((id, amount) => nextPlayers.contains(id))
 
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
-                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind))%players.size)
-                            val nextCurrentPlayer = selectNextPlayer(nextActivePlayer, (players.indexOf(nextSmallBlind))%players.size)
+                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind)+1)%players.size)
+                            val nextCurrentPlayer = selectNextPlayer(nextActivePlayer, (players.indexOf(nextSmallBlind)+1)%players.size)
 
                             val updateActivePlayer = nextPlayers.map( _ -> false).toMap
 
