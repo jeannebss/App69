@@ -23,29 +23,39 @@ object Wire extends AppWire[Event, View]:
                 case Check => Obj("tag" -> "Check")
                 case Call => Obj("tag" -> "Call")
                 case Fold => Obj("tag" -> "Fold")
-                case Raise(value: Bet) => Obj("tag" -> "Raise", "amount" -> IntWire.encode(value))
+                case Raise(value: Bet) => 
+                    Obj(
+                        "tag" -> "Raise",
+                        "amount" -> IntWire.encode(value)
+                    )
         def decode(json: Value): Try[Choice] = Try:
             json("tag").str match
                 case "Check" => Check
                 case "Call" => Call
                 case "Fold" => Fold
                 case "Raise" => Raise(IntWire.decode(json("amount")).get)
-                case _ => throw new DecodingException("Wrong choice!")
+                case _ => throw new DecodingException("Not a valid choice!")
 
     override object eventFormat extends WireFormat[Event]:
         override def encode(event: Event): Value =
             event match
                 case PlayerAction(choice) =>
-                    Obj("tag" -> "PlayerAction", "value" -> ChoiceWire.encode(choice))
+                    Obj(
+                        "tag" -> "PlayerAction", 
+                        "value" -> ChoiceWire.encode(choice)
+                    )
                 case EndGameChoice(choice) => 
-                    Obj("tag" -> "EndGameChoice", "value" -> Bool(choice))
+                    Obj(
+                        "tag" -> "EndGameChoice",
+                        "value" -> BooleanWire.encode(choice)
+                    )
                 case Ready => 
                     Obj("tag" -> "Ready")
 
         override def decode(json: Value): Try[Event] = Try:
             json("tag").str match
                 case "PlayerAction" => PlayerAction(ChoiceWire.decode(json("value")).get)
-                case "EndGameChoice" => EndGameChoice(json("value").bool)
+                case "EndGameChoice" => EndGameChoice(BooleanWire.decode(json("value")).get)
                 case "Ready" => Ready
                 case _ => throw new DecodingException("Not a valid event!")
 
@@ -63,7 +73,11 @@ object Wire extends AppWire[Event, View]:
                         "turn" -> IntWire.encode(turn),
                         "choice" -> ChoiceWire.encode(choice)
                     )
-                case CardReveal => Obj("phase" -> "CardReveal")
+                case CardReveal(winners) => 
+                    Obj(
+                        "phase" -> "CardReveal",
+                        "Winners" -> VectorWire(StringWire).encode(winners)
+                    )
                 case Reveal  => Obj("phase" -> "Reveal")
                 case EndGame => Obj("phase" -> "EndGame")
 
@@ -75,7 +89,9 @@ object Wire extends AppWire[Event, View]:
                         IntWire.decode(json("turn")).get,
                         ChoiceWire.decode(json("choice")).get
                     )
-                case "CardReveal" => CardReveal
+                case "CardReveal" => 
+                    val winners = VectorWire(StringWire).decode(json("Winners")).get
+                    CardReveal(winners)
                 case "Reveal" => Reveal
                 case "EndGame" => EndGame
                 case _ => throw new DecodingException("Not a valid phase!")

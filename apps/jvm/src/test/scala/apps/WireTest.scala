@@ -38,7 +38,7 @@ class WireTest extends munit.FunSuite:
         val phases = Seq(
             InGame(1),
             PlayerChoice(2, Raise(50)),
-            CardReveal,
+            CardReveal(Vector("user1", "user2")),
             Reveal,
             EndGame
         )
@@ -155,9 +155,6 @@ object WireSpecifications extends Properties("Wire"):
             c <- choice
         yield PlayerChoice(i.toInt, c)
 
-    val phase: Gen[Phase] =
-        oneOf(inGame, playerChoice, const(CardReveal), const(Reveal), const(EndGame))
-
     val userId: Gen[UserId] = Arbitrary.arbitrary[String]
     
     val choiceMade: Gen[PhaseView] =
@@ -173,6 +170,14 @@ object WireSpecifications extends Properties("Wire"):
         for 
             p <- players
         yield Winners(p)
+
+    val cardReveal: Gen[Phase] =
+        for
+            w <- players
+        yield CardReveal(w)
+    
+    val phase: Gen[Phase] =
+        oneOf(inGame, playerChoice, cardReveal, const(Reveal), const(EndGame))
 
     val end: Gen[PhaseView] = 
         for

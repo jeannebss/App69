@@ -128,7 +128,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind))%players.size)
 
                             
-                            val showCardPhase = state.copy(phase = CardReveal, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer)
+                            val showCardPhase = state.copy(phase = CardReveal(winner.toVector), playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer)
 
                             val nextState = state.copy(currentPlayer = nextCurrentPlayer, phase = nextPhase, playerBalance = nextPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = nextPlayers.map(_ -> 0).toMap, highestBetter = nextSmallBlind)
                             
@@ -184,7 +184,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val nextActivePlayer = nextPlayers.map( _ -> false).toMap
                             
-                            val showCardPhase = state.copy(phase = CardReveal, playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer)
+                            val showCardPhase = state.copy(phase = CardReveal(winner.toVector), playerBalance = updatedPlayerBalance, activePlayer = nextActivePlayer)
 
                             val nextState = state.copy(currentPlayer = nextSmallBlind, phase = nextPhase, playerBalance = futurPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextCurrentPlayer, turnBets = nextPlayers.map(_ -> 0).toMap, highestBetter = nextSmallBlind)
                             
@@ -235,7 +235,7 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val updateActivePlayer = nextPlayers.map( _ -> false).toMap
 
-                            val showCardPhase = state.copy(phase = CardReveal, playerBalance = updatedPlayerBalance, activePlayer = updateActivePlayer)
+                            val showCardPhase = state.copy(phase = CardReveal(winner.toVector), playerBalance = updatedPlayerBalance, activePlayer = updateActivePlayer)
 
                             val nextState = state.copy(currentPlayer = nextSmallBlind, phase = Reveal, playerBalance = nextPlayerBalance, activePlayer = updateActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = nextPlayers.map(_ -> 0).toMap, highestBetter = nextSmallBlind )
                             Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
@@ -358,9 +358,8 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 View(phaseView, playersView, tableView)
 
-            case CardReveal =>
-                val maxBet = turnBets.values.max
-                val phaseView = Winners(turnBets.filter(_._2 == maxBet).keys.toVector)
+            case CardReveal(winners) =>
+                val phaseView = Winners(winners)
                 val tableView = TableView(dealerCards.toVector, poolValue)
                 val playerView = PlayerCardReveal(
                     indexes,
