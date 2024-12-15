@@ -51,8 +51,8 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
 
     def renderView(userId: UserId, view: View): Frag =
         frag(
-            renderPhase(userId, view.phaseView),
             div(cls := "all-table")(renderTable(userId, view.tableView)),
+            renderPhase(userId, view.phaseView),
             renderPlayers(userId, view.playersView)
         )
 
@@ -89,8 +89,10 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
             case ChoiceMade(choice) => frag()
 
             case Winners(players) => frag(
-                div(id := "winner")(
-                    "Winner: ", players.mkString(", ")
+                div(cls := "all-table")(
+                    div(id := "winner")(
+                        "Winner: ", players.mkString(", ")
+                    )
                 )
             )
             case IsReady => frag(
@@ -104,6 +106,13 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                     "Balance: ", balance
                 )
             )
+    
+    def renderTable(userId: UserId, tableView: TableView): Frag =
+        frag(
+            div(cls := "center-table")(renderDealerCards(tableView.dealerCards),
+            div(cls := "amount-in-pool")("Amount in the pool: ", tableView.poolBalance," CHF")),
+            div(cls := "pot")(span(cls := "money")("💰"))
+        )
 
     def renderPlayers(userId: UserId, playersView: PlayersView): Frag = 
         playersView match
@@ -152,20 +161,13 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
         )
 
     def renderOpponent(opponent : UserId, idOfPlayer: Int, balance: Balance, stillInGame: Boolean, isCurrentPlayer: Boolean, hand: Hands): Frag =
-        val nameOfPlayer = if isCurrentPlayer then (opponent +"💰") else opponent
+        val nameOfPlayer = if isCurrentPlayer then (opponent +"🟢") else opponent
         frag(
             div(cls := "player", id := s"player$idOfPlayer")(
                 div(cls := "player-name")(nameOfPlayer),
                 renderHand(hand, stillInGame),
                 div(cls := "balance")(s"Balance : $balance CHF")
             ) 
-        )
-
-    def renderTable(userId: UserId, tableView: TableView): Frag =
-        frag(
-            div(cls := "center-table")(renderDealerCards(tableView.dealerCards),
-            div(cls := "amount-in-pool")("Amount in the pool: ", tableView.poolBalance," CHF")),
-            div(cls := "pot")(span(cls := "money")("💰"))
         )
 
     def renderHand(hand: Hands, stillInGame: Boolean): Frag =
@@ -253,6 +255,13 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                 transform: translateY(-50%); 
                 font-size: 2em;
                 padding: 0.5em;
+            }
+            #winner {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 2em;
             }
             #current-player {
                 top:80%;
