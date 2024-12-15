@@ -398,11 +398,11 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 val playersView = InGamePlayer(
                     indexes,
-                    playerBalance,
-                    activePlayer,
+                    playerBalance.withDefaultValue(0),
+                    activePlayer.withDefaultValue(false),
                     currentPlayer,
-                    turnBets,
-                    playerCards(userId)
+                    turnBets.withDefaultValue(0),
+                    playerCards.getOrElse(userId, EmptyHand)
                 )
                 View(phaseView, playersView, tableView)
             
@@ -415,11 +415,11 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 val playersView = InGamePlayer(
                     indexes,
-                    playerBalance,
-                    activePlayer,
+                    playerBalance.withDefaultValue(0),
+                    activePlayer.withDefaultValue(false),
                     currentPlayer,
-                    turnBets,
-                    playerCards(userId)
+                    turnBets.withDefaultValue(0),
+                    playerCards.getOrElse(userId, EmptyHand)
                 )
                 View(phaseView, playersView, tableView)
 
@@ -429,9 +429,9 @@ class Logic extends StateMachine[Event, GameState, View]:
                 val tableView = TableView(dealerCards.toVector, poolValue)
                 val playerView = PlayerCardReveal(
                     indexes,
-                    playerBalance,
+                    playerBalance.withDefaultValue(0),
                     PLAYERS.map(player => (player, true)).toMap,
-                    playerCards
+                    playerCards.withDefaultValue(EmptyHand)
                 )
                 View(phaseView, playerView, tableView)
 
@@ -440,9 +440,9 @@ class Logic extends StateMachine[Event, GameState, View]:
                 val tableView = TableView(dealerCards.toVector, poolValue)
                 val playerView = PlayerCardReveal(
                     indexes,
-                    playerBalance,
+                    playerBalance.withDefaultValue(0),
                     PLAYERS.map(player => (player, true)).toMap,
-                    playerCards
+                    playerCards.withDefaultValue(EmptyHand)
                 )
                 View(IsReady(activePlayer(userId)), playerView, tableView)
 
@@ -451,9 +451,9 @@ class Logic extends StateMachine[Event, GameState, View]:
                 val tableView = TableView(dealerCards.toVector, poolValue)
                 val playerView = PlayerCardReveal(
                     indexes,
-                    playerBalance,
+                    playerBalance.withDefaultValue(0),
                     PLAYERS.map(player => (player, true)).toMap,
-                    playerCards
+                    playerCards.withDefaultValue(EmptyHand)
                 )
                 val maxBalance = playerBalance.values.max
                 val winners = playerBalance.filter(_._2 == maxBalance).keys.toVector
