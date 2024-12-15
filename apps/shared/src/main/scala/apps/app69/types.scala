@@ -45,7 +45,7 @@ object Suit:
   * and finally King takes 13.
   */
 object Value:
-    val AllValues: Set[Value] = (1 to 14).toSet
+    val AllValues: Set[Value] = (2 to 14).toSet
 
 /**
   * Card representation that takes two parameters: its
