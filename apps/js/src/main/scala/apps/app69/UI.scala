@@ -261,7 +261,8 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
      * @param hand the hand of the opponent
      * @return Frag to render the opponent
      */
-    def renderOpponent(opponent : UserId, idOfPlayer: Int, turnBet: Balance, balance: Balance, stillInGame: Boolean, isCurrentPlayer: Boolean, hand: Hands): Frag =
+    def renderOpponent(opponent : UserId, idOfPlayer: Int, turnBet: Balance,
+        balance: Balance, stillInGame: Boolean, isCurrentPlayer: Boolean, hand: Hands): Frag =
         //if the opponent is the current player, add a green dot next to the name
         val nameOfPlayer = if isCurrentPlayer then (opponent + "🟢") else opponent
         frag(
