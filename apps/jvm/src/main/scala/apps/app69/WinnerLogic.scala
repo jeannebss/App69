@@ -115,6 +115,19 @@ object WinnerLogic:
 
         val activeHand = players.filter((id, h) => activePlayer(id))
         val handValue: Map[UserId, HandValue] = activeHand.map(tup => (tup._1, WinnerLogic.handValue(tup._2, dealer)))
-        val max = handValue.maxBy(_._2.ordinal)._2
-        handValue.filter(tup => tup._2.ordinal == max.ordinal).keys.toSet
-        
+        val maxHandValue = handValue.maxBy(_._2.ordinal)._2
+        val upper = handValue.filter(tup => tup._2.ordinal == maxHandValue.ordinal)
+        val test = upper.map((player, hand) => hand match
+            case HandValue.High(value) => (player, value)
+            case HandValue.Pair(value) => (player, value)
+            case HandValue.DoublePair(value) => (player, value)
+            case HandValue.Brelan(value) => (player, value)
+            case HandValue.Straight(value) => (player, value)
+            case HandValue.Flush(value) => (player, value)
+            case HandValue.Full(value) => (player, value)
+            case HandValue.House(value) => (player, value)
+            case HandValue.StraightFlush(value) => (player, value)
+        )
+        val maxValueInHand = test.maxBy(_._2)._2
+        test.filter((player, value) => value == maxValueInHand).keys.toSet
+
