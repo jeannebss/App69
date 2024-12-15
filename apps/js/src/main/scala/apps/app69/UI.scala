@@ -87,8 +87,6 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
     /**
      * Render the phase
      * Pattern matches the phaseView to render the phase
-     * When the phase is IsReady, render the button for the user to click when they are ready
-     * When the phase is End, render the winner and the balance
      * 
      * @param userId the name of the user
      * @param phaseView the phase to render
@@ -103,6 +101,7 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                     div(cls := "controls")(
                     button(id := "raise")(
                         "Raise: ",
+                        //definition of the type, id, placeholder, size and box used to sent the ammount of the raise
                         input(
                             `type` := "type",
                             id := "bet",
@@ -118,11 +117,13 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                         ),
                         " CHF"
                         ),
+                    //The three buttons to send the action of the player
                     button(id := "check", onclick:={ () => sendEvent(PlayerAction(Check))})("Check"),
                     button(id := "call", onclick:={ () => sendEvent(PlayerAction(Call))})("Call"),
                     button(id := "fold", onclick:={ () => sendEvent(PlayerAction(Fold))})("Fold")
                     ) 
                 )
+
             //render nothing specific
             case NotPlaying => frag()
 
@@ -143,6 +144,8 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                     )
                 )
             )
+
+            //render the button for the user to click when they are ready, else display the waiting message
             case IsReady(ready) => frag(
                 if !ready then 
                     div(cls := "controls")(
@@ -152,6 +155,8 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                         button(id := "waiting")("Waiting for other players to be ready")
                     )
             )
+
+            //render the end of the game, with the winners and balance
             case End(players,balance) => frag(
                 div(id := "end")(
                     "Winner: ", players.mkString(", "),
@@ -159,6 +164,13 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                 )
             )
     
+    /**
+     * Render the table
+     * Calls the renderDealerCards method to render the dealer cards, and get the pool balance
+     * 
+     * @param tableView the table to render
+     * @return Frag to render the table
+     */ 
     def renderTable(tableView: TableView): Frag =
         frag(
             div(cls := "center-table")(renderDealerCards(tableView.dealerCards),
@@ -166,11 +178,21 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
             div(cls := "pot")(span(cls := "money")("💰"))
         )
 
+    /**
+     * Render the players
+     * Pattern matches the playersView to render the players
+     * 
+     * @param playersView the players to render
+     * @return Frag to render the players
+     */
     def renderPlayers(playersView: PlayersView): Frag = 
         playersView match
+            //Use the parameters of the case class to render the players
             case InGamePlayer(playerIndex, playerBalance, activePlayers, currentPlayer, turnBets, hand) =>
                 frag(
+                    //render the user
                     renderUserId(playerBalance(userId), hand, turnBets(userId), activePlayers(userId)),
+                    //render the opponents
                     frag(
                         playerIndex.keys.filter(_ != userId).toSeq.map{ user =>
                             renderOpponent(
@@ -186,9 +208,12 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                     )
                 )
                 
+            //Use the parameters of the case class to render the players
             case PlayerCardReveal(playerIndex, playerBalance, activePlayers, playerHands) => 
                 frag(
+                    //render the user
                     renderUserId(playerBalance(userId), playerHands(userId),0, activePlayers(userId)),
+                    //render the opponents
                     frag(
                         playerIndex.keys.filter(_ != userId).toSeq.map { user =>
                             renderOpponent(
@@ -204,7 +229,17 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
                     )
                 )
                 
-
+    
+    /**
+      * Render the user
+      * Calls the renderHand method to render the hand of the user
+      *
+      * @param balance the balance of the user
+      * @param hand the hand of the user
+      * @param turnBet the turn bet of the user
+      * @param stillInGame if the user is still in the game
+      * @return Frag to render the user
+      */
     def renderUserId(balance: Balance, hand: Hands, turnBet: Balance, stillInGame: Boolean): Frag = 
         frag(
             div(cls := "player", id := "current-player")(
@@ -215,7 +250,21 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
             )               
         )
 
+    /**
+     * Render the opponent
+     * Calls the renderHand method to render the hand of the opponent
+     * 
+     * @param opponent the name of the opponent
+     * @param idOfPlayer the id of the opponent
+     * @param turnBet the turn bet of the opponent
+     * @param balance the balance of the opponent
+     * @param stillInGame if the opponent is still in the game
+     * @param isCurrentPlayer if the opponent is the current player
+     * @param hand the hand of the opponent
+     * @return Frag to render the opponent
+     */
     def renderOpponent(opponent : UserId, idOfPlayer: Int, turnBet: Balance, balance: Balance, stillInGame: Boolean, isCurrentPlayer: Boolean, hand: Hands): Frag =
+        //if the opponent is the current player, add a green dot next to the name
         val nameOfPlayer = if isCurrentPlayer then (opponent +"🟢") else opponent
         frag(
             div(cls := "player", id := s"player$idOfPlayer")(
@@ -226,6 +275,14 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
             ) 
         )
 
+    /**
+     * Render the hand
+     * Pattern matches the hand to render the hand
+     * 
+     * @param hand the hand to render
+     * @param stillInGame if the player is still in the game
+     * @return Frag to render the hand
+     */
     def renderHand(hand: Hands, stillInGame: Boolean): Frag =
         if stillInGame then hand match
             case EmptyHand => frag(div(cls := "cards")(CardSymbols.back * 2))
@@ -233,14 +290,24 @@ class UIInstance(userId: UserId, sendMessage: ujson.Value => Unit, target: Targe
         else 
             frag()
         
+    /**
+     * Render the dealer cards
+     * 
+     * @param dealerCards the dealer cards to render
+     * @return Frag to render the dealer cards
+     */
     def renderDealerCards(dealerCards: Vector[Card]): Frag =
         frag(
             div(cls := "deck")(
+            //Calculate the number of turned cards to display from the dealer cards
             span(cls := "cards-on-table")(CardSymbols.back * (5 - dealerCards.size)),
             span(cls := "turned-cards")(dealerCards.map(CardSymbols.apply).mkString)
             )
         )
-
+    
+    /**
+     * CSS for the UI
+    */
     override def css: String = super.css + 
         """
             html {
