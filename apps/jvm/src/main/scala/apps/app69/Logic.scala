@@ -300,6 +300,13 @@ class Logic extends StateMachine[Event, GameState, View]:
                     
             case (_) => throw IllegalMoveException("Unsupported phase")
 
+    /**
+      * Projects a view of the current game state to each player based
+      * on the evolution of the game.
+      *
+      * @param state current state of the game
+      * @param userId id of the user that will receive the view
+      */
     override def project(state: GameState)(userId: UserId): View =
         val GameState(
             _,
@@ -315,16 +322,25 @@ class Logic extends StateMachine[Event, GameState, View]:
             turnBets
         ) = state
         
-        def numberOfCard(turn: Int): Int =
-            turn match
-                case 0 => 0
-                case 1 => 3
-                case 2 => 4
-                case _ => 5
+        /**
+          * Helper function to transform the current turn of the game
+          * into number of cards that will be turned on the table.
+          *
+          * @param turn current turn of the game
+          */
+        def numberOfCard(turn: Int): Int = turn match
+            case 0 => 0
+            case 1 => 3
+            case 2 => 4
+            case _ => 5
         
+        // Zips players with indexes so their position at the
+        // table stays the same during the game
         val indexes = PLAYERS.filter(_ != userId).zipWithIndex.toMap
         phase match
+            // In game representation
             case InGame(turn) =>
+                // Different view for current player and the others
                 val phaseView = 
                     if userId == currentPlayer then ChoiceSelection
                     else NotPlaying
@@ -342,6 +358,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 View(phaseView, playersView, tableView)
             
+            // After a player made a choice
             case PlayerChoice(turn, choice) =>
                 val phaseView = ChoiceMade(choice, currentPlayer)
                 val tableView = TableView(
@@ -358,6 +375,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 View(phaseView, playersView, tableView)
 
+            // View of winners of a round and card reveal
             case CardReveal(winners) =>
                 val phaseView = Winners(winners)
                 val tableView = TableView(dealerCards.toVector, poolValue)
@@ -369,6 +387,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 View(phaseView, playerView, tableView)
 
+            // View of the reveal 
             case Reveal =>
                 val tableView = TableView(dealerCards.toVector, poolValue)
                 val playerView = PlayerCardReveal(
@@ -379,6 +398,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 View(IsReady(activePlayer(userId)), playerView, tableView)
 
+            // End game view
             case EndGame => 
                 val tableView = TableView(dealerCards.toVector, poolValue)
                 val playerView = PlayerCardReveal(
