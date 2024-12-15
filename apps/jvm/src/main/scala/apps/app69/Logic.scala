@@ -14,6 +14,15 @@ import app69.Hands.*
 import scala.annotation.unused
 import scala.util.{Random, Try}
 
+/**
+ * Logic class encapsulates the core mechanics of the 6Poker9 game.
+ * It manages the game's states, player actions, and transitions between phases.
+ *
+ * The game supports 2 to 5 players and follows typical poker rules, including blinds, betting rounds,
+ * and a showdown phase to determine the winner.
+ *
+ * This class inherits from StateMachine and uses a GameState to track the current game status.
+ */
 class Logic extends StateMachine[Event, GameState, View]:
     
     val appInfo: AppInfo = AppInfo(
@@ -43,6 +52,17 @@ class Logic extends StateMachine[Event, GameState, View]:
     import app69.Card.*
     import app69.PlayersView.*
     import app69.Hands.*
+
+    /**
+     * Initializes the game state.
+     *
+     * This method sets up the players, assigns their starting balances, and deals the initial cards.
+     * It validates the number of players before proceeding.
+     *
+     * @param clients List of user IDs representing the players.
+     * @return The initial game state.
+     * @throws IllegalMoveException If the number of players is not between 2 and 5.
+     */
     override def init(clients: Seq[UserId]): GameState =
         PLAYERS = clients.toVector
         if clients.size < 2 || clients.size > 5 then
@@ -67,12 +87,34 @@ class Logic extends StateMachine[Event, GameState, View]:
         )
 
 
+    /**
+     * Handles state transitions based on player actions and events.
+     *
+     * This method updates the game state according to the player's move and current phase of the game.
+     * It validates the move and ensures transitions comply with game rules.
+     *
+     * @param state The current game state.
+     * @param userId The ID of the player performing an action.
+     * @param event The event triggered by the player's action.
+     * @return A Try containing a sequence of actions or an error if the move is invalid.
+     * @throws IllegalMoveException If the move violates game rules.
+     */
     override def transition(state: GameState)(userId: UserId, event: Event): Try[Seq[Action[GameState]]] = Try:
         import Phase.*
         import Event.*
         val GameState(players, playerBalance, poolValue, currentPlayer, dealerCards, playerCards, phase, activePlayer, smallBlind, highestBetter, turnBets) = state
         
         val number = players.size
+
+        /**
+          * Handles the transition to the next current player even when some player are not playing anymore
+          * It helps us going from the current player to the next one by jumping the ones who can't play
+          * It uses the index of the player in order to retrieve the needed next player
+          * 
+          * @param newActivePlayer The Map with the players currently playing
+          * @param ref the index of the current player in the players list
+          * @return A userId which is the current player for the next action
+          */
 
         def selectNextPlayer(newActivePlayer: Map[UserId, Boolean], ref: Int): UserId =
             val player = players(ref)
@@ -90,6 +132,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 val maxRaise = raiseCapacity.min
 
                 choice match
+                    // Handles the case in which the current player tryes to check
                     case Check =>
                         //No player actions
                         if (turnBets(userId) != highestBet)
@@ -105,12 +148,12 @@ class Logic extends StateMachine[Event, GameState, View]:
                             selectNextPlayer(activePlayer, players.indexOf(smallBlind)) else updateCurrentPlayer
 
 
-                        //Passe au reveal si un joueur est tapis ou si on est a la fin du dernier round
+                        //Determine if we go to the reveal depending on if a player is all in and the turn is done or if all the cards have been shown
                         val nextPhase = if turnOver then 
                             if turn == 3 || playerBalance.exists((id, v) => v == 0) || activePlayer.count((id, v) => v) <= 1 then Reveal else InGame(turn + 1)
                             else InGame(turn)
 
-                        //Si reveal calcul du gagnant et update avant de switch to reveal
+                        //If we go to the reveal state, we compute the needed informations for a correct state switch
                         if nextPhase == Reveal then
                             val winner = WinnerLogic.winner(playerCards, dealerCards, activePlayer)
                             val updatedPlayerBalance = playerBalance.map( (id, amount) =>
@@ -139,7 +182,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
                             val nextGamingState = state.copy(poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
                             Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextGamingState))
-
+                    // Handles the case in which the current player tryes to Call
                     case Call =>
                         if (turnBets.forall((id, money) => money == 0))
                             then throw IllegalMoveException("You cannot Call")
@@ -160,12 +203,12 @@ class Logic extends StateMachine[Event, GameState, View]:
                         val nextCurrentPlayer = if turnOver then 
                             selectNextPlayer(activePlayer, players.indexOf(smallBlind)) else updateCurrentPlayer
 
-                        //Passe au reveal si un joueur est tapis ou si on est a la fin du dernier round
+                        //Determine if we go to the reveal depending on if a player is all in and the turn is done or if all the cards have been shown
                         val nextPhase = if turnOver then 
                             if turn == 3 || nextPlayerBalance.exists((id, v) => v == 0) || activePlayer.count((id, v) => v) <= 1 then Reveal else InGame(turn + 1)
                             else InGame(turn)
 
-                        //Si reveal calcul du gagnant et update avant de switch to reveal
+                        //If we go to the reveal state, we compute the needed informations for a correct state switch
                         if nextPhase == Reveal then
                             val winner = WinnerLogic.winner(playerCards, dealerCards, activePlayer) // détermine les Id du/des gagnants
                             val updatedPlayerBalance = nextPlayerBalance.map( (id, amount) =>
@@ -195,6 +238,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextState = state.copy(playerBalance = nextPlayerBalance, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
                             Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
 
+                    // Handles the case in which the current player tryes to Fold
                     case Fold =>
                         if (turnBets(userId) - turnBets(highestBetter) == 0)
                             then throw IllegalMoveException("You cannot fold cause no one has raised")
@@ -211,12 +255,12 @@ class Logic extends StateMachine[Event, GameState, View]:
                         val nextCurrentPlayer = if turnOver then 
                             selectNextPlayer(nextActivePlayer, players.indexOf(smallBlind)) else updateCurrentPlayer
 
-                        //Passe au reveal si un joueur est tapis ou si on est a la fin du dernier round
+                        //Determine if we go to the reveal depending on if a player is all in and the turn is done or if all the cards have been shown
                         val nextPhase = if turnOver then 
                             if turn == 3 || playerBalance.exists((id, v) => v == 0) || nextActivePlayer.count((id, v) => v) <= 1 then Reveal else InGame(turn + 1)
                             else InGame(turn)
                         
-                        //Si reveal calcul du gagnant et update avant de switch to reveal phase
+                        //If we go to the reveal state, we compute the needed informations for a correct state switch
                         if nextPhase == Reveal then
                             val winner = WinnerLogic.winner(playerCards, dealerCards, nextActivePlayer)
                             val updatedPlayerBalance = playerBalance.map( (id, amount) =>
@@ -244,7 +288,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextHighestBetter = if turnOver then selectNextPlayer(nextActivePlayer, players.indexOf(smallBlind)) else highestBetter
                             val nextState = state.copy(activePlayer = nextActivePlayer, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
                             Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
-
+                    // Handles the case in which the current player tryes to Raise
                     case Raise(value) =>
                         //Players action link code, cannot turnOver if someone raise
                         val diff = highestBet + value - turnBets(currentPlayer)
@@ -261,8 +305,10 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                         val nextState = state.copy(currentPlayer = nextCurrentPlayer, playerBalance = nextPlayerBalance, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
                         Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
+            // Handles any other action in game that shouldn't appen
             case (InGame(turn),_) => throw IllegalMoveException("You can only play in this phase of the game")
 
+            // Handles the transition from the reveal to another round
             case (Reveal, Ready) => 
                 
 
@@ -287,15 +333,26 @@ class Logic extends StateMachine[Event, GameState, View]:
                     //Good
                     val newGameState = state.copy(activePlayer = newActivePlayer)
                     Seq(Action.Pause(1000), Action.Render(newGameState))
-                                    
+
+            // Handles any other action then Ready in the reveal state of the game                        
             case (Reveal, _) => throw IllegalMoveException("Compare your cards to the other's")
+
+            // Handles the end of the game: do player want to start a new Game?
             case (EndGame, Ready) => 
                 val playersReady = activePlayer.updated(userId, true)
                 if playersReady.forall((k, v) => v) then Seq(Action.Pause(1000), Action.Render(init(PLAYERS.toSeq)))
                 else Seq(Action.Render(state.copy(activePlayer = playersReady)))
                     
+            // Handles any other case that shouldn't appen 
             case (_) => throw IllegalMoveException("Unsupported phase")
 
+    /**
+      * Projects a view of the current game state to each player based
+      * on the evolution of the game.
+      *
+      * @param state current state of the game
+      * @param userId id of the user that will receive the view
+      */
     override def project(state: GameState)(userId: UserId): View =
         val GameState(
             _,
@@ -311,16 +368,25 @@ class Logic extends StateMachine[Event, GameState, View]:
             turnBets
         ) = state
         
-        def numberOfCard(turn: Int): Int =
-            turn match
-                case 0 => 0
-                case 1 => 3
-                case 2 => 4
-                case _ => 5
+        /**
+          * Helper function to transform the current turn of the game
+          * into number of cards that will be turned on the table.
+          *
+          * @param turn current turn of the game
+          */
+        def numberOfCard(turn: Int): Int = turn match
+            case 0 => 0
+            case 1 => 3
+            case 2 => 4
+            case _ => 5
         
+        // Zips players with indexes so their position at the
+        // table stays the same during the game
         val indexes = PLAYERS.filter(_ != userId).zipWithIndex.toMap
         phase match
+            // In game representation
             case InGame(turn) =>
+                // Different view for current player and the others
                 val phaseView = 
                     if userId == currentPlayer then ChoiceSelection
                     else NotPlaying
@@ -338,6 +404,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 View(phaseView, playersView, tableView)
             
+            // After a player made a choice
             case PlayerChoice(turn, choice) =>
                 val phaseView = ChoiceMade(choice, currentPlayer)
                 val tableView = TableView(
@@ -354,6 +421,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 View(phaseView, playersView, tableView)
 
+            // View of winners of a round and card reveal
             case CardReveal(winners) =>
                 val phaseView = Winners(winners)
                 val tableView = TableView(dealerCards.toVector, poolValue)
@@ -365,6 +433,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 View(phaseView, playerView, tableView)
 
+            // View of the reveal 
             case Reveal =>
                 val tableView = TableView(dealerCards.toVector, poolValue)
                 val playerView = PlayerCardReveal(
@@ -375,6 +444,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                 )
                 View(IsReady(activePlayer(userId)), playerView, tableView)
 
+            // End game view
             case EndGame => 
                 val tableView = TableView(dealerCards.toVector, poolValue)
                 val playerView = PlayerCardReveal(
