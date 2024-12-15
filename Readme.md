@@ -20,7 +20,7 @@ A state-driven, multiplayer poker game for up to five players. This app offers a
 - [The rules of Poker](#the-rules-of-poker)
 
 ## Start of the Game
-Players arrive at the ScalApp page. They chose 6poker9 and enter the userIds of the players, that can go from 2 to 5.
+Players arrive at the ScalApp page. They chose 6poker9 and enter the userIds of the players, that can go from 2 up to 5.
 Then the game is launched.
 
 ## User's experience
@@ -28,51 +28,51 @@ Then the game is launched.
 ### 1. Joining And Starting The Game
 - Trigger: The player accesses the game lobby or is invited to a game session.
 - Experience:
-  - The player select his username
-  - Display a screen with the title “6poker9”, the poker table and the 5 dealer's cards turned over. The pool amount is 0 and we see an emoji 💰.
-  - Each player sees its cards, balance and current bet. He sees the same infos about the other players except their cards. 
+  - The player selects his username
+  - A screen is displayed with the title “6poker9”, the poker table and the 5 dealer's cards turned over. The pool amount is 0 and we see an emoji 💰.
+  - Each player sees its cards, balance and current bet. He sees the same information about the other players except their cards. 
 
 ### 2. Gameplay Interaction
 - Trigger: It is the player's turn to act.
 - Experience:
-  - Highlight the player's turn with a clear indicator that is a green dot emoji next to his name.
+  - Highlight the player's turn with a clear indicator that is a green dot emoji next to their name.
   - Present context-sensitive action buttons: "Check", "Call", "Raise", and "Fold". Next to "Raise" is provided an input box to set the raise amount. Alerts are thrown if the action is invalid.
   - When the choice is made, the buttons disappear.
 
 ### 3. Observing Other Players
 - Trigger: Another player takes their turn.
 - Experience:
-  - Show a message to inform what the player did (e.g., "Player1 folded", "Player2 raises by 50").
-  - Update the other players' infos dynamically with the new balance, current bet and if the player didn't fold, his turned cards.
+  - Show a message to inform what the player did (e.g., "Player1 folded", "Player2 raised by 50").
+  - Update the other players' information dynamically with the new balance, current bet and if the player doesn't fold, his cards stay turned face down.
 
 ### 4. Viewing Dealer's Cards
 - Trigger: The game progresses to the Flop, Turn, or River phases.
 - Experience:
-- Reveal dealer's cards one phase at a time.
+  - Reveal dealer's cards one by one during each phase similarly to a poker game so that players can choose their next strategy based on the newly revealed cards.
 
 ### 5. Showdown and Results
 - Trigger: The final betting round ends, and remaining players reveal their hands.
 - Experience:
   - Show each player's hand with their username and balance.
-  - A message is displayed to announce the winner of the round based on the regular rules.
+  - A message is displayed to announce the winner of the round based on the regular rules during a few seconds.
 
 ### 6. Post-Round and Restart
 - Trigger: The round ends, and the game is ready for the next hand.
 - Experience:
   - Allow players to prepare for the next round by displaying a button to click when the player is ready.
-  - When all the players clicked on ready, a new round is started and cards are distributed. The game phase returns to the GamePlay Interaction one.
+  - When all the players clicked on ready, a new round is started and cards are distributed. The game restarts with a new round such that players balances are updated based on the result of the previous round.
 
 ## Features
 
 ### **What the game offers**:
 - **Multiplayer**: Up to 5 players per game.
 - **Turn-Based Gameplay**: Each player can select their actions (check, call, raise, fold) during their turn.
-- **Live Updates**: The balances (scores) of each player, their currentBet, their cards and those of the dealer are displayed in real time. There is a green dot emoji that follows the current player.
+- **Live Updates**: The balances (scores) of each player, their current bet, their cards and those of the dealer are displayed in real time. There is a green dot emoji that follows the current player.
 - **Smooth Transitions**: The game progresses automatically through various stages:
-  - The player get cards and is in game. He can raise,check/call or fold.
+  - The player receives his cards and joins the game. He can raise, check/call or fold.
   - The player made a choice and it's the turn of the next player.
   - The dealer's cards are shown (flop, turn, river)
-  - All the cards are shown, the winner is determined and there is a waiting for everybody to click on the beReady button to play another round
+  - All the cards are shown, the winner is determined and there is a waiting for everybody to click on the ready button to play another round.
 - **Intuitive Interface**: Contextual actions, clear turn indicators, and essential information displayed.
 
 
