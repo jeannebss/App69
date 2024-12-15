@@ -35,8 +35,10 @@ class Logic extends StateMachine[Event, GameState, View]:
 
     override val wire = Wire
 
-    private val END_ROUND_PAUSE_MS = 5000
+    //Pause time between actions
+    private val IN_BETWEEN_TIME = 5000
 
+    //Random generator
     private val RANDOM = new Random()
 
     private val STARTING_BALANCE = 1000
@@ -74,7 +76,7 @@ class Logic extends StateMachine[Event, GameState, View]:
         val playerCards = (0 until players.size).map(n => (players(n), Hand(remainingCard(n * 2), remainingCard(n*2+1)))).toMap
         GameState(
             players,
-            clients.map(_ -> STARTING_BALANCE).toMap.updated(clients.head, STARTING_BALANCE - SMALL_BLIND),
+            clients.map(_ -> STARTING_BALANCE).toMap.updated(clients.head, STARTING_BALANCE - SMALL_BLIND), //Small blind automatically pay
             0,
             clients.tail.head,
             dealerCards,
@@ -83,7 +85,7 @@ class Logic extends StateMachine[Event, GameState, View]:
             clients.map(_ -> true).toMap,
             clients.head,
             clients.head,
-            clients.map(_ -> 0).toMap.updated(clients.head, SMALL_BLIND),
+            clients.map(_ -> 0).toMap.updated(clients.head, SMALL_BLIND) //Small blind automatically pay
         )
 
 
@@ -175,13 +177,13 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val nextState = state.copy(currentPlayer = nextEndCurrentPlayer, phase = Reveal, playerBalance = nextPlayerBalance, activePlayer = nextActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = nextPlayers.map(_ -> 0).toMap, highestBetter = nextSmallBlind)
                             
-                            Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
+                            Seq(Action.Render(showCardPhase), Action.Pause(IN_BETWEEN_TIME), Action.Render(nextState))
                         else
                             val viewingPhase = PlayerChoice(turn, choice)
                             val nextHighestBetter = if turnOver then selectNextPlayer(activePlayer, players.indexOf(smallBlind)) else highestBetter
                             val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
                             val nextGamingState = state.copy(poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
-                            Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextGamingState))
+                            Seq(Action.Render(nextDsiplayState), Action.Pause(IN_BETWEEN_TIME), Action.Render(nextGamingState))
                     // Handles the case in which the current player tryes to Call
                     case Call =>
                         if (turnBets.forall((id, money) => money == 0))
@@ -218,11 +220,11 @@ class Logic extends StateMachine[Event, GameState, View]:
 
                             val nextPlayers = players.filter(id => updatedPlayerBalance(id) > 0)
 
-                            val futurPlayerBalance = updatedPlayerBalance.filter((id, amount) => amount>0)
+                            val futurPlayerBalance = updatedPlayerBalance.filter((id, amount) => amount > 0)
 
                             val nextActiveBlind = players.map(id => (id, nextPlayers.contains(id))).toMap
-                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind) + 1)%players.size)
-                            val nextEndCurrentPlayer = selectNextPlayer(nextActiveBlind, (players.indexOf(nextSmallBlind) + 1)%players.size)
+                            val nextSmallBlind = selectNextPlayer(nextActiveBlind, (players.indexOf(smallBlind) + 1) % players.size)
+                            val nextEndCurrentPlayer = selectNextPlayer(nextActiveBlind, (players.indexOf(nextSmallBlind) + 1) % players.size)
 
                             val nextActivePlayer = nextPlayers.map( _ -> false).toMap
                             
@@ -236,7 +238,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet, playerBalance = nextPlayerBalance) 
                             val nextHighestBetter = if turnOver then selectNextPlayer(activePlayer, players.indexOf(smallBlind)) else highestBetter
                             val nextState = state.copy(playerBalance = nextPlayerBalance, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
-                            Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
+                            Seq(Action.Render(nextDsiplayState), Action.Pause(IN_BETWEEN_TIME), Action.Render(nextState))
 
                     // Handles the case in which the current player tryes to Fold
                     case Fold =>
@@ -281,13 +283,13 @@ class Logic extends StateMachine[Event, GameState, View]:
                             val showCardPhase = state.copy(phase = CardReveal(winner.toVector), playerBalance = updatedPlayerBalance, activePlayer = updateActivePlayer)
 
                             val nextState = state.copy(currentPlayer = nextEndCurrentPlayer, phase = Reveal, playerBalance = nextPlayerBalance, activePlayer = updateActivePlayer, players = nextPlayers, poolValue = 0, smallBlind = nextSmallBlind, turnBets = nextPlayers.map(_ -> 0).toMap, highestBetter = nextSmallBlind )
-                            Seq(Action.Render(showCardPhase), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
+                            Seq(Action.Render(showCardPhase), Action.Pause(IN_BETWEEN_TIME), Action.Render(nextState))
                         else
                             val viewingPhase = PlayerChoice(turn, choice)
                             val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet, activePlayer = nextActivePlayer)
                             val nextHighestBetter = if turnOver then selectNextPlayer(nextActivePlayer, players.indexOf(smallBlind)) else highestBetter
                             val nextState = state.copy(activePlayer = nextActivePlayer, poolValue = nextPoolValue, currentPlayer = nextCurrentPlayer, phase = nextPhase, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
-                            Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
+                            Seq(Action.Render(nextDsiplayState), Action.Pause(IN_BETWEEN_TIME), Action.Render(nextState))
                     // Handles the case in which the current player tryes to Raise
                     case Raise(value) =>
                         //Players action link code, cannot turnOver if someone raise
@@ -304,7 +306,7 @@ class Logic extends StateMachine[Event, GameState, View]:
                         val nextDsiplayState = state.copy(phase = viewingPhase, turnBets = nextTurnBet)
 
                         val nextState = state.copy(currentPlayer = nextCurrentPlayer, playerBalance = nextPlayerBalance, turnBets = nextTurnBet, highestBetter = nextHighestBetter)
-                        Seq(Action.Render(nextDsiplayState), Action.Pause(END_ROUND_PAUSE_MS), Action.Render(nextState))
+                        Seq(Action.Render(nextDsiplayState), Action.Pause(IN_BETWEEN_TIME), Action.Render(nextState))
             // Handles any other action in game that shouldn't appen
             case (InGame(turn),_) => throw IllegalMoveException("You can only play in this phase of the game")
 
